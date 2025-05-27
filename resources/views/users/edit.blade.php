@@ -1,0 +1,307 @@
+@extends('layouts.app')
+
+@section('title', 'Edit User - ' . $user->name)
+@section('page-title', 'Edit User')
+
+@section('content')
+    <div class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center space-x-4">
+                <a href="{{ route('users.show', $user) }}" 
+                   class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Edit User</h1>
+                    <p class="mt-1 text-sm text-gray-600">Update {{ $user->name }}'s account information and permissions</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <form method="POST" action="{{ route('users.update', $user) }}" x-data="editUserForm()" class="space-y-6">
+                @csrf
+                @method('PUT')
+
+                <!-- User Avatar Section -->
+                <div class="flex items-center space-x-6 pb-6 border-b border-gray-200">
+                    <img class="w-16 h-16 rounded-full" 
+                         src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=3b82f6&color=fff&size=64" 
+                         alt="{{ $user->name }}">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">{{ $user->name }}</h3>
+                        <p class="text-sm text-gray-500">{{ $user->email }}</p>
+                        <p class="text-xs text-gray-400">Member since {{ $user->created_at->format('M Y') }}</p>
+                    </div>
+                </div>
+
+                <!-- Name Field -->
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                        Full Name <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" 
+                           name="name" 
+                           id="name"
+                           value="{{ old('name', $user->name) }}"
+                           required
+                           autocomplete="name"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all @error('name') border-red-500 @enderror"
+                           placeholder="Enter user's full name">
+                    @error('name')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Email Field -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address <span class="text-red-500">*</span>
+                    </label>
+                    <input type="email" 
+                           name="email" 
+                           id="email"
+                           value="{{ old('email', $user->email) }}"
+                           required
+                           autocomplete="email"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all @error('email') border-red-500 @enderror"
+                           placeholder="Enter email address">
+                    @error('email')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Password Section -->
+                <div class="border-t border-gray-200 pt-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Password Settings</h3>
+                        <button type="button" 
+                                @click="showPasswordSection = !showPasswordSection"
+                                class="text-sm text-blue-600 hover:text-blue-700">
+                            <span x-text="showPasswordSection ? 'Cancel Password Change' : 'Change Password'"></span>
+                        </button>
+                    </div>
+                    
+                    <div x-show="showPasswordSection" x-transition class="space-y-4">
+                        <!-- New Password Field -->
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                                New Password
+                            </label>
+                            <div class="relative">
+                                <input x-bind:type="showPassword ? 'text' : 'password'" 
+                                       name="password" 
+                                       id="password"
+                                       autocomplete="new-password"
+                                       class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all @error('password') border-red-500 @enderror"
+                                       placeholder="Enter new password (min. 8 characters)">
+                                <button type="button" 
+                                        @click="showPassword = !showPassword"
+                                        class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600">
+                                    <svg x-show="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    <svg x-show="showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            @error('password')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                            <p class="mt-1 text-sm text-gray-500">Leave blank to keep current password</p>
+                        </div>
+
+                        <!-- Confirm Password Field -->
+                        <div>
+                            <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-2">
+                                Confirm New Password
+                            </label>
+                            <div class="relative">
+                                <input x-bind:type="showConfirmPassword ? 'text' : 'password'" 
+                                       name="password_confirmation" 
+                                       id="password_confirmation"
+                                       autocomplete="new-password"
+                                       class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                       placeholder="Confirm new password">
+                                <button type="button" 
+                                        @click="showConfirmPassword = !showConfirmPassword"
+                                        class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600">
+                                    <svg x-show="!showConfirmPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    <svg x-show="showConfirmPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div x-show="!showPasswordSection" class="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0h-2m-2-6a9 9 0 1118 0 9 9 0 01-18 0z"></path>
+                            </svg>
+                            Password will remain unchanged unless you click "Change Password" above.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Role Selection -->
+                <div class="border-t border-gray-200 pt-6">
+                    <label for="role" class="block text-sm font-medium text-gray-700 mb-2">
+                        User Role <span class="text-red-500">*</span>
+                    </label>
+                    <select name="role" 
+                            id="role"
+                            required
+                            x-model="selectedRole"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all @error('role') border-red-500 @enderror">
+                        <option value="">Select a role</option>
+                        @foreach($roles as $role)
+                            <option value="{{ $role->name }}" 
+                                    {{ old('role', $user->roles->first()?->name) === $role->name ? 'selected' : '' }}>
+                                {{ ucfirst($role->name) }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('role')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+
+                    <!-- Current Role Display -->
+                    <div class="mt-3 flex items-center space-x-2">
+                        <span class="text-sm text-gray-600">Current role:</span>
+                        @if($user->roles->count() > 0)
+                            @foreach($user->roles as $role)
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                           {{ $role->name === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
+                                    {{ ucfirst($role->name) }}
+                                </span>
+                            @endforeach
+                        @else
+                            <span class="text-sm text-gray-500">No role assigned</span>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Role Information -->
+                <div x-show="selectedRole" x-transition class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="text-sm font-medium text-blue-900 mb-2">Role Permissions</h4>
+                    <div x-show="selectedRole === 'admin'" class="text-sm text-blue-800">
+                        <p class="font-medium">Admin users can:</p>
+                        <ul class="mt-1 list-disc list-inside space-y-1">
+                            <li>Manage all users and their roles</li>
+                            <li>Access all system features</li>
+                            <li>View and generate reports</li>
+                            <li>Modify system settings</li>
+                        </ul>
+                    </div>
+                    <div x-show="selectedRole === 'members'" class="text-sm text-blue-800">
+                        <p class="font-medium">Member users can:</p>
+                        <ul class="mt-1 list-disc list-inside space-y-1">
+                            <li>View and manage posts</li>
+                            <li>Access the dashboard</li>
+                            <li>Edit their own profile</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Email Verification Status -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="text-sm font-medium text-gray-900 mb-2">Account Status</h4>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Email Verification</span>
+                            @if($user->email_verified_at)
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Verified
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Pending
+                                </span>
+                            @endif
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Account Status</span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Active
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <a href="{{ route('users.show', $user) }}" 
+                       class="px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        <span class="flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Update User
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+@endsection
+
+@push('scripts')
+<script>
+function editUserForm() {
+    return {
+        showPassword: false,
+        showConfirmPassword: false,
+        showPasswordSection: false,
+        selectedRole: '{{ old('role', $user->roles->first()?->name) }}'
+    }
+}
+
+// Form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('password_confirmation');
+    
+    // Real-time password confirmation validation
+    confirmPassword.addEventListener('input', function() {
+        if (password.value && this.value !== password.value) {
+            this.setCustomValidity('Passwords do not match');
+            this.classList.add('border-red-500');
+        } else {
+            this.setCustomValidity('');
+            this.classList.remove('border-red-500');
+        }
+    });
+    
+    // Clear password confirmation when main password is cleared
+    password.addEventListener('input', function() {
+        if (!this.value) {
+            confirmPassword.value = '';
+            confirmPassword.setCustomValidity('');
+            confirmPassword.classList.remove('border-red-500');
+        }
+    });
+});
+</script>
+@endpush
