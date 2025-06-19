@@ -15,19 +15,31 @@ class TestUsersSeeder extends Seeder
     public function run(): void
     {
         // Create Admin User
-        $admin = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-        ]);
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Admin User',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+                'approval_status' => 'approved',
+                'approved_at' => now(),
+            ]
+        );
 
         // Create Member User
-        $member = User::create([
-            'name' => 'Member User',
-            'email' => 'member@example.com',
-            'password' => Hash::make('password'),
-        ]);
+        $member = User::updateOrCreate(
+            ['email' => 'member@example.com'],
+            [
+                'name' => 'Member User',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+                'approval_status' => 'approved',
+                'approved_at' => now(),
+            ]
+        );
 
-        $this->command->info('Admin and Member test users created successfully!');
+        $this->command->info('Demo users created/updated successfully!');
+        $this->command->info('Admin: admin@example.com / password');
+        $this->command->info('Member: member@example.com / password');
     }
 }
