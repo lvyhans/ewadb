@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
-use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -15,7 +15,7 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::with('roles');
+        $query = User::query();
 
         // Search functionality
         if ($request->filled('search')) {
@@ -25,13 +25,10 @@ class UserController extends Controller
             });
         }
 
-        // Role filter
-        if ($request->filled('role')) {
-            $query->role($request->role);
-        }
-
         $users = $query->paginate(10)->withQueryString();
-        $roles = Role::all();
+        
+        // Get roles from database (exclude admin role for filtering)
+        $roles = Role::active()->where('name', '!=', 'admin')->get();
 
         return view('users.index', compact('users', 'roles'));
     }
@@ -41,7 +38,9 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = Role::all();
+        // Get roles from database (exclude admin role)
+        $roles = Role::active()->where('name', '!=', 'admin')->get();
+        
         return view('users.create', compact('roles'));
     }
 
@@ -54,8 +53,15 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|exists:roles,name',
+            'roles' => 'array',
+            'roles.*' => 'exists:roles,id',
         ]);
+
+        // Prevent admin role assignment through user management
+        $adminRole = Role::where('name', 'admin')->first();
+        if ($adminRole && $request->has('roles') && in_array($adminRole->id, $request->roles)) {
+            return back()->withErrors(['roles' => 'Administrator role cannot be assigned through user management.'])->withInput();
+        }
 
         $user = User::create([
             'name' => $request->name,
@@ -63,7 +69,15 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $user->assignRole($request->role);
+        // Assign roles if provided, otherwise assign default 'user' role
+        if ($request->has('roles') && !empty($request->roles)) {
+            $user->roles()->sync($request->roles);
+        } else {
+            $defaultRole = Role::where('name', 'user')->first();
+            if ($defaultRole) {
+                $user->roles()->attach($defaultRole);
+            }
+        }
 
         return redirect()->route('users.index')
             ->with('success', 'User created successfully!');
@@ -74,7 +88,6 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        $user->load('roles', 'permissions');
         return view('users.show', compact('user'));
     }
 
@@ -83,8 +96,15 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        $roles = Role::all();
-        $user->load('roles');
+        // Check if user can be managed
+        if (!$user->canBeManaged()) {
+            return redirect()->route('users.index')
+                ->with('error', 'The first administrator cannot be edited for security reasons.');
+        }
+        
+        // Get roles from database (exclude admin role)
+        $roles = Role::active()->where('name', '!=', 'admin')->get();
+        
         return view('users.edit', compact('user', 'roles'));
     }
 
@@ -93,12 +113,25 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+        // Check if user can be managed
+        if (!$user->canBeManaged()) {
+            return redirect()->route('users.index')
+                ->with('error', 'The first administrator cannot be modified for security reasons.');
+        }
+        
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:8|confirmed',
-            'role' => 'required|exists:roles,name',
+            'roles' => 'array',
+            'roles.*' => 'exists:roles,id',
         ]);
+
+        // Prevent admin role assignment through user management
+        $adminRole = Role::where('name', 'admin')->first();
+        if ($adminRole && $request->has('roles') && in_array($adminRole->id, $request->roles)) {
+            return back()->withErrors(['roles' => 'Administrator role cannot be assigned through user management.'])->withInput();
+        }
 
         $user->update([
             'name' => $request->name,
@@ -106,7 +139,10 @@ class UserController extends Controller
             'password' => $request->password ? Hash::make($request->password) : $user->password,
         ]);
 
-        $user->syncRoles([$request->role]);
+        // Update roles if provided (admin role will be filtered out by validation above)
+        if ($request->has('roles')) {
+            $user->roles()->sync($request->roles);
+        }
 
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully!');
@@ -117,6 +153,12 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+        // Check if user can be managed
+        if (!$user->canBeManaged()) {
+            return redirect()->route('users.index')
+                ->with('error', 'The first administrator cannot be deleted for security reasons.');
+        }
+        
         if ($user->id === auth()->id()) {
             return back()->with('error', 'You cannot delete your own account!');
         }

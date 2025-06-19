@@ -3,14 +3,16 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\UserApprovalController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+    return redirect()->route('login');
 });
 
 // Registration Routes (for guest users only)
@@ -40,29 +42,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('users', UserController::class);
     Route::patch('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
     
-    // User Approval Routes (Admin only)
-    Route::middleware('role:admin')->prefix('admin')->group(function () {
-        Route::get('/user-approvals', [UserApprovalController::class, 'index'])->name('user-approvals.index');
-        Route::get('/user-approvals/{user}', [UserApprovalController::class, 'show'])->name('user-approvals.show');
-        Route::patch('/user-approvals/{user}/approve', [UserApprovalController::class, 'approve'])->name('user-approvals.approve');
-        Route::patch('/user-approvals/{user}/reject', [UserApprovalController::class, 'reject'])->name('user-approvals.reject');
-        Route::get('/user-approvals/{user}/download/{document}', [UserApprovalController::class, 'downloadDocument'])->name('user-approvals.download-document');
-    });
-    
     // Settings Management Routes
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings', [SettingsController::class, 'store'])->name('settings.store');
     Route::delete('/settings/{setting}', [SettingsController::class, 'destroy'])->name('settings.destroy');
     Route::post('/settings/initialize', [SettingsController::class, 'initializeDefaults'])->name('settings.initialize');
-    
-    // Roles & Permissions Management Routes
-    Route::get('/roles-permissions', [RolePermissionController::class, 'index'])->name('roles-permissions.index');
-    Route::post('/roles-permissions/roles', [RolePermissionController::class, 'storeRole'])->name('roles-permissions.store-role');
-    Route::post('/roles-permissions/permissions', [RolePermissionController::class, 'storePermission'])->name('roles-permissions.store-permission');
-    Route::patch('/roles-permissions/roles/{role}', [RolePermissionController::class, 'updateRole'])->name('roles-permissions.update-role');
-    Route::delete('/roles-permissions/roles/{role}', [RolePermissionController::class, 'destroyRole'])->name('roles-permissions.destroy-role');
-    Route::delete('/roles-permissions/permissions/{permission}', [RolePermissionController::class, 'destroyPermission'])->name('roles-permissions.destroy-permission');
 });
 
 // Redirect authenticated users from login page to dashboard

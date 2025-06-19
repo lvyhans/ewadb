@@ -79,15 +79,11 @@
                     <h3 class="text-lg font-medium text-gray-900">{{ $user->name }}</h3>
                     <p class="text-sm text-gray-500">{{ $user->email }}</p>
                     
-                    @if($user->roles->isNotEmpty())
-                        <div class="mt-3">
-                            @foreach($user->roles as $role)
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-1">
-                                    {{ ucfirst($role->name) }}
-                                </span>
-                            @endforeach
-                        </div>
-                    @endif
+                    <div class="mt-3">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-1">
+                            {{ $user->email === 'admin@example.com' ? 'Admin' : 'User' }}
+                        </span>
+                    </div>
                     
                     <div class="mt-4 text-xs text-gray-500">
                         <p>Member since {{ $user->created_at->format('M Y') }}</p>

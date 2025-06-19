@@ -47,15 +47,8 @@ class GenerateAdminToken extends Command
                     'name' => $name,
                     'email' => $email,
                     'password' => Hash::make($password),
-                    'approval_status' => 'approved',
-                    'approved_at' => now(),
                     'email_verified_at' => now()
                 ]);
-
-                // Assign admin role
-                if (method_exists($user, 'assignRole')) {
-                    $user->assignRole('Super Admin');
-                }
 
                 $this->info("Admin user created successfully!");
             } else {
@@ -63,15 +56,6 @@ class GenerateAdminToken extends Command
                 $this->line("Use --create-admin flag to create a new admin user");
                 return 1;
             }
-        }
-
-        // Ensure user is approved
-        if (!$user->isApproved()) {
-            $user->update([
-                'approval_status' => 'approved',
-                'approved_at' => now()
-            ]);
-            $this->info("User approval status updated to 'approved'");
         }
 
         // Generate token

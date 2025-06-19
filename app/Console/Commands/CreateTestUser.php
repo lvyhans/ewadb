@@ -42,8 +42,7 @@ class CreateTestUser extends Command
             'name' => $name,
             'email' => $email,
             'password' => Hash::make($password),
-            'email_verified_at' => now(),
-            'approval_status' => 'approved'
+            'email_verified_at' => now()
         ]);
 
         $this->info("Test user created successfully!");

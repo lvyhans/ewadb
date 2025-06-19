@@ -156,61 +156,88 @@
 
                 <!-- Role Selection -->
                 <div class="border-t border-gray-200 pt-6">
-                    <label for="role" class="block text-sm font-medium text-gray-700 mb-2">
-                        User Role <span class="text-red-500">*</span>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        User Roles <span class="text-red-500">*</span>
                     </label>
-                    <select name="role" 
-                            id="role"
-                            required
-                            x-model="selectedRole"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all @error('role') border-red-500 @enderror">
-                        <option value="">Select a role</option>
+                    
+                    <!-- Show existing admin roles as read-only -->
+                    @if($user->roles->where('name', 'admin')->count() > 0)
+                        <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <h5 class="text-sm font-medium text-red-900 mb-2">Current Administrator Roles (Read-only)</h5>
+                            <div class="space-y-2">
+                                @foreach($user->roles->where('name', 'admin') as $adminRole)
+                                    <div class="flex items-center">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                            </svg>
+                                            {{ $adminRole->display_name }}
+                                        </span>
+                                        <span class="ml-2 text-xs text-red-600">Cannot be modified</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                    
+                    <!-- Editable roles (non-admin) -->
+                    <div class="space-y-3">
                         @foreach($roles as $role)
-                            <option value="{{ $role->name }}" 
-                                    {{ old('role', $user->roles->first()?->name) === $role->name ? 'selected' : '' }}>
-                                {{ ucfirst($role->name) }}
-                            </option>
+                            <label class="flex items-center">
+                                <input type="checkbox" 
+                                       name="roles[]" 
+                                       value="{{ $role->id }}"
+                                       {{ in_array($role->id, old('roles', $user->roles->where('name', '!=', 'admin')->pluck('id')->toArray())) ? 'checked' : '' }}
+                                       class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500">
+                                <div class="ml-3">
+                                    <span class="text-sm font-medium text-gray-900">{{ $role->display_name }}</span>
+                                    @if($role->description)
+                                        <p class="text-sm text-gray-500">{{ $role->description }}</p>
+                                    @endif
+                                </div>
+                            </label>
                         @endforeach
-                    </select>
-                    @error('role')
+                    </div>
+                    @error('roles')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                    @error('roles.*')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
 
-                    <!-- Current Role Display -->
-                    <div class="mt-3 flex items-center space-x-2">
-                        <span class="text-sm text-gray-600">Current role:</span>
-                        @if($user->roles->count() > 0)
-                            @foreach($user->roles as $role)
+                    <div class="mt-3">
+                        <span class="text-sm text-gray-600">All current roles:</span>
+                        <div class="mt-1 space-x-2">
+                            @forelse($user->roles as $userRole)
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                           {{ $role->name === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
-                                    {{ ucfirst($role->name) }}
+                                           {{ $userRole->name === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
+                                    {{ $userRole->display_name }}
+                                    @if($userRole->name === 'admin')
+                                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                        </svg>
+                                    @endif
                                 </span>
-                            @endforeach
-                        @else
-                            <span class="text-sm text-gray-500">No role assigned</span>
-                        @endif
+                            @empty
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    No roles assigned
+                                </span>
+                            @endforelse
+                        </div>
                     </div>
                 </div>
 
                 <!-- Role Information -->
-                <div x-show="selectedRole" x-transition class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 class="text-sm font-medium text-blue-900 mb-2">Role Permissions</h4>
-                    <div x-show="selectedRole === 'admin'" class="text-sm text-blue-800">
-                        <p class="font-medium">Admin users can:</p>
-                        <ul class="mt-1 list-disc list-inside space-y-1">
-                            <li>Manage all users and their roles</li>
-                            <li>Access all system features</li>
-                            <li>View and generate reports</li>
-                            <li>Modify system settings</li>
-                        </ul>
-                    </div>
-                    <div x-show="selectedRole === 'members'" class="text-sm text-blue-800">
-                        <p class="font-medium">Member users can:</p>
-                        <ul class="mt-1 list-disc list-inside space-y-1">
-                            <li>View and manage posts</li>
-                            <li>Access the dashboard</li>
-                            <li>Edit their own profile</li>
-                        </ul>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="text-sm font-medium text-blue-900 mb-2">Role System</h4>
+                    <p class="text-sm text-blue-800">
+                        Users can have multiple roles. Each role grants specific permissions and access levels within the system.
+                        Modifying roles will take effect immediately after saving.
+                    </p>
+                    <div class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                        <p class="text-xs text-yellow-800">
+                            <strong>Note:</strong> Administrator role cannot be assigned or removed through user management for security reasons.
+                        </p>
                     </div>
                 </div>
 
@@ -273,7 +300,7 @@ function editUserForm() {
         showPassword: false,
         showConfirmPassword: false,
         showPasswordSection: false,
-        selectedRole: '{{ old('role', $user->roles->first()?->name) }}'
+        selectedRole: '{{ old('role', $user->email === 'admin@example.com' ? 'admin' : 'user') }}'
     }
 }
 

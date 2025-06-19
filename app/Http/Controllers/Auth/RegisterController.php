@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -89,14 +90,33 @@ class RegisterController extends Controller
             'pan_card' => $documentPaths['pan_card'] ?? null,
             'address_proof' => $documentPaths['address_proof'] ?? null,
             'bank_statement' => $documentPaths['bank_statement'] ?? null,
-            'approval_status' => 'pending'
+            'approval_status' => 'pending', // All new users start as pending
         ]);
 
-        // Assign Super Admin role
-        $user->assignRole('Super Admin');
+        // Assign role based on registration order
+        $userCount = User::count();
+        if ($userCount === 1) {
+            // First user gets Administrator role and is auto-approved
+            $adminRole = Role::where('name', 'admin')->first();
+            if ($adminRole) {
+                $user->roles()->attach($adminRole);
+                // Auto-approve first admin user
+                $user->update([
+                    'approval_status' => 'approved',
+                    'approved_at' => now(),
+                    'approved_by' => $user->id // Self-approved
+                ]);
+            }
+        } else {
+            // Subsequent users get default User role but remain pending
+            $userRole = Role::where('name', 'user')->first();
+            if ($userRole) {
+                $user->roles()->attach($userRole);
+            }
+        }
 
         return redirect()->route('registration.success')
-            ->with('success', 'Registration submitted successfully! Your account is pending approval.');
+            ->with('success', 'Registration submitted successfully! You can now login to your account.');
     }
 
     /**

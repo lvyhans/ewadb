@@ -27,24 +27,21 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'approval_status' => 'pending', // Set as pending by default
         ]);
 
-        // Assign default role (you can customize this)
-        $user->assignRole('members');
+        // Create token for new user
+        $token = $user->createToken('auth-token')->plainTextToken;
 
-        // Don't create token during registration - user needs approval first
         return response()->json([
             'status' => 'success',
-            'message' => 'User registered successfully. Your account is pending approval.',
+            'message' => 'User registered successfully.',
             'data' => [
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'approval_status' => $user->approval_status,
                 ],
-                'note' => 'You will receive a notification once your account is approved.'
+                'token' => $token
             ]
         ], 201);
     }
@@ -67,24 +64,6 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
         
-        // Check if user is approved
-        if (!$user->isApproved()) {
-            $message = match($user->approval_status) {
-                'pending' => 'Your account is pending approval. Please wait for admin approval.',
-                'rejected' => 'Your account has been rejected. Reason: ' . ($user->rejection_reason ?? 'Not specified'),
-                default => 'Your account is not approved for login.'
-            };
-            
-            return response()->json([
-                'status' => 'error',
-                'message' => $message,
-                'data' => [
-                    'approval_status' => $user->approval_status,
-                    'rejection_reason' => $user->rejection_reason
-                ]
-            ], 403);
-        }
-        
         // Delete old tokens (optional - for single device login)
         // $user->tokens()->delete();
         
@@ -94,7 +73,7 @@ class AuthController extends Controller
             'status' => 'success',
             'message' => 'Login successful',
             'data' => [
-                'user' => $user->load('roles', 'permissions'),
+                'user' => $user,
                 'token' => $token,
                 'expires_at' => now()->addDays(30)->toISOString()
             ]
@@ -131,7 +110,7 @@ class AuthController extends Controller
     public function profile(Request $request)
     {
         return response()->json([
-            'user' => $request->user()->load('roles', 'permissions')
+            'user' => $request->user()
         ]);
     }
 
@@ -151,7 +130,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Profile updated successfully',
-            'user' => $user->load('roles', 'permissions')
+            'user' => $user
         ]);
     }
 
@@ -182,52 +161,6 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Password changed successfully'
-        ]);
-    }
-
-    /**
-     * Get registration token for a newly registered user (for testing/admin purposes)
-     */
-    public function getRegistrationToken(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'admin_secret' => 'required|string',
-        ]);
-
-        // Simple security check - you can make this more sophisticated
-        if ($request->admin_secret !== config('app.admin_secret', 'admin123')) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Invalid admin secret'
-            ], 403);
-        }
-
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'User not found'
-            ], 404);
-        }
-
-        // Generate a temporary token for this user (even if not approved)
-        $token = $user->createToken('registration-token')->plainTextToken;
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Registration token generated',
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'approval_status' => $user->approval_status,
-                ],
-                'token' => $token,
-                'note' => 'This token can be used to approve the user via API'
-            ]
         ]);
     }
 }

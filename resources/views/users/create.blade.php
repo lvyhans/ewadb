@@ -122,45 +122,45 @@
 
                 <!-- Role Selection -->
                 <div>
-                    <label for="role" class="block text-sm font-medium text-gray-700 mb-2">
-                        User Role <span class="text-red-500">*</span>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        User Roles <span class="text-red-500">*</span>
                     </label>
-                    <select name="role" 
-                            id="role"
-                            required
-                            x-model="selectedRole"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all @error('role') border-red-500 @enderror">
-                        <option value="">Select a role</option>
+                    <div class="space-y-3">
                         @foreach($roles as $role)
-                            <option value="{{ $role->name }}" {{ old('role') === $role->name ? 'selected' : '' }}>
-                                {{ ucfirst($role->name) }}
-                            </option>
+                            <label class="flex items-center">
+                                <input type="checkbox" 
+                                       name="roles[]" 
+                                       value="{{ $role->id }}"
+                                       {{ in_array($role->id, old('roles', [])) ? 'checked' : '' }}
+                                       class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500">
+                                <div class="ml-3">
+                                    <span class="text-sm font-medium text-gray-900">{{ $role->display_name }}</span>
+                                    @if($role->description)
+                                        <p class="text-sm text-gray-500">{{ $role->description }}</p>
+                                    @endif
+                                </div>
+                            </label>
                         @endforeach
-                    </select>
-                    @error('role')
+                    </div>
+                    @error('roles')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                    @error('roles.*')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <!-- Role Information -->
-                <div x-show="selectedRole" x-transition class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 class="text-sm font-medium text-blue-900 mb-2">Role Permissions</h4>
-                    <div x-show="selectedRole === 'admin'" class="text-sm text-blue-800">
-                        <p class="font-medium">Admin users can:</p>
-                        <ul class="mt-1 list-disc list-inside space-y-1">
-                            <li>Manage all users and their roles</li>
-                            <li>Access all system features</li>
-                            <li>View and generate reports</li>
-                            <li>Modify system settings</li>
-                        </ul>
-                    </div>
-                    <div x-show="selectedRole === 'members'" class="text-sm text-blue-800">
-                        <p class="font-medium">Member users can:</p>
-                        <ul class="mt-1 list-disc list-inside space-y-1">
-                            <li>View and manage posts</li>
-                            <li>Access the dashboard</li>
-                            <li>Edit their own profile</li>
-                        </ul>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="text-sm font-medium text-blue-900 mb-2">Role System</h4>
+                    <p class="text-sm text-blue-800">
+                        Users can have multiple roles. Each role grants specific permissions and access levels within the system.
+                        If no roles are selected, the user will be assigned the default "User" role.
+                    </p>
+                    <div class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                        <p class="text-xs text-yellow-800">
+                            <strong>Note:</strong> Administrator role can only be assigned through the external registration process and cannot be managed here for security reasons.
+                        </p>
                     </div>
                 </div>
 

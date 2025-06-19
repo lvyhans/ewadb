@@ -22,32 +22,37 @@
                 </div>
                 
                 <div class="flex items-center space-x-3">
-                    @can('edit users')
-                    <a href="{{ route('users.edit', $user) }}" 
-                       class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                        </svg>
-                        Edit User
-                    </a>
-                    @endcan
-                    
-                    @can('delete users')
-                    @if($user->id !== auth()->id())
-                    <form method="POST" action="{{ route('users.destroy', $user) }}" class="inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" 
-                                class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                                onclick="return confirm('Are you sure you want to delete this user? This action cannot be undone.')">
+                    @if($user->canBeManaged())
+                        <a href="{{ route('users.edit', $user) }}" 
+                           class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                             </svg>
-                            Delete User
-                        </button>
-                    </form>
+                            Edit User
+                        </a>
+                        
+                        @if($user->id !== auth()->id())
+                            <form method="POST" action="{{ route('users.destroy', $user) }}" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" 
+                                        class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                                        onclick="return confirm('Are you sure you want to delete this user? This action cannot be undone.')">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    Delete User
+                                </button>
+                            </form>
+                        @endif
+                    @else
+                        <div class="inline-flex items-center px-4 py-2 bg-yellow-100 border border-yellow-300 rounded-lg font-medium text-sm text-yellow-800">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                            Protected Administrator
+                        </div>
                     @endif
-                    @endcan
                 </div>
             </div>
         </div>
@@ -68,10 +73,28 @@
                         <div>
                             <h4 class="text-xl font-semibold text-gray-900">{{ $user->name }}</h4>
                             <p class="text-gray-600">{{ $user->email }}</p>
-                            <div class="flex items-center mt-2">
+                            <div class="flex items-center mt-2 space-x-2">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                     Active
                                 </span>
+                                @forelse($user->roles as $role)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                               {{ $role->name === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
+                                        {{ $role->display_name }}
+                                    </span>
+                                @empty
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        No roles
+                                    </span>
+                                @endforelse
+                                @if($user->isFirstAdmin())
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                        </svg>
+                                        Protected
+                                    </span>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -111,41 +134,20 @@
                     </div>
                 </div>
 
-                <!-- Roles and Permissions -->
+                <!-- Account Info -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-6">Roles & Permissions</h3>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-6">Account Information</h3>
                     
                     <div class="space-y-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-3">Assigned Roles</label>
+                            <label class="block text-sm font-medium text-gray-600 mb-3">User Type</label>
                             <div class="flex flex-wrap gap-2">
-                                @forelse($user->roles as $role)
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
-                                               {{ $role->name === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
-                                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                                        </svg>
-                                        {{ ucfirst($role->name) }}
-                                    </span>
-                                @empty
-                                    <span class="text-sm text-gray-500">No roles assigned</span>
-                                @endforelse
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-3">Permissions ({{ $user->getAllPermissions()->count() }})</label>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                @forelse($user->getAllPermissions() as $permission)
-                                    <div class="flex items-center p-2 bg-gray-50 rounded-lg">
-                                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                        <span class="text-sm text-gray-700">{{ ucfirst(str_replace('_', ' ', $permission->name)) }}</span>
-                                    </div>
-                                @empty
-                                    <p class="text-sm text-gray-500 col-span-2">No permissions assigned</p>
-                                @endforelse
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                    User
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -162,14 +164,6 @@
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-gray-600">API Tokens</span>
                             <span class="text-sm font-medium text-gray-900">{{ $user->tokens()->count() }}</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-600">Roles</span>
-                            <span class="text-sm font-medium text-gray-900">{{ $user->roles->count() }}</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-600">Permissions</span>
-                            <span class="text-sm font-medium text-gray-900">{{ $user->getAllPermissions()->count() }}</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-gray-600">Account Age</span>

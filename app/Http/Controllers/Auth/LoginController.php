@@ -32,17 +32,17 @@ class LoginController extends Controller
             $user = Auth::user();
             
             // Check if user is approved
-            if (!$user->isApproved()) {
+            if ($user->approval_status !== 'approved') {
                 Auth::logout();
                 
                 $message = match($user->approval_status) {
                     'pending' => 'Your account is pending approval. Please wait for administrator approval.',
-                    'rejected' => 'Your account has been rejected. Reason: ' . ($user->rejection_reason ?? 'Not specified'),
+                    'rejected' => 'Your account has been rejected. Reason: ' . ($user->rejection_reason ?: 'No reason provided.'),
                     default => 'Your account is not approved for login.'
                 };
                 
-                return back()->withErrors([
-                    'email' => $message,
+                throw ValidationException::withMessages([
+                    'email' => [$message],
                 ]);
             }
             

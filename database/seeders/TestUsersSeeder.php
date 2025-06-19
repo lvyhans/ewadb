@@ -20,7 +20,6 @@ class TestUsersSeeder extends Seeder
             'email' => 'admin@example.com',
             'password' => Hash::make('password'),
         ]);
-        $admin->assignRole('admin');
 
         // Create Member User
         $member = User::create([
@@ -28,7 +27,6 @@ class TestUsersSeeder extends Seeder
             'email' => 'member@example.com',
             'password' => Hash::make('password'),
         ]);
-        $member->assignRole('members');
 
         $this->command->info('Admin and Member test users created successfully!');
     }
