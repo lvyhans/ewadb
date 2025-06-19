@@ -12,6 +12,8 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->command->info('Creating system roles...');
+        
         $roles = [
             [
                 'name' => 'admin',
@@ -45,5 +47,7 @@ class RoleSeeder extends Seeder
                 $role
             );
         }
+        
+        $this->command->info('✅ System roles created/updated successfully!');
     }
 }

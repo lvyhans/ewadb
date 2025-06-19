@@ -2,8 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -13,11 +11,21 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->command->info('🌱 Starting database seeding...');
+        
+        // Seed in proper order
+        $this->call([
+            RoleSeeder::class,
+            TestUsersSeeder::class,
+            AssignUserRolesSeeder::class,
         ]);
+
+        $this->command->newLine();
+        $this->command->info('✅ Database seeding completed successfully!');
+        $this->command->newLine();
+        $this->command->info('🔑 Demo credentials available:');
+        $this->command->line('   👑 Administrator: admin@example.com / password');
+        $this->command->line('   👤 Member: member@example.com / password');
+        $this->command->newLine();
     }
 }
