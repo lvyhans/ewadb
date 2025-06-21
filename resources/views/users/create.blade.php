@@ -15,8 +15,8 @@
                     </svg>
                 </a>
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Add New User</h1>
-                    <p class="mt-1 text-sm text-gray-600">Create a new user account with appropriate role and permissions</p>
+                    <h1 class="text-2xl font-bold text-gray-900">Add New Member</h1>
+                    <p class="mt-1 text-sm text-gray-600">Create a new member account. Note: Administrator accounts can only be created through the registration system.</p>
                 </div>
             </div>
         </div>

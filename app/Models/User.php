@@ -40,7 +40,9 @@ class User extends Authenticatable
         'approval_status',
         'rejection_reason',
         'approved_at',
-        'approved_by'
+        'approved_by',
+        'admin_id',
+        'admin_group_name'
     ];
 
     /**
@@ -92,12 +94,12 @@ class User extends Authenticatable
     }
     
     /**
-     * Get primary role name (first role or default to 'user')
+     * Get primary role name (first role or default to 'member')
      */
     public function getRoleAttribute()
     {
         $firstRole = $this->roles()->first();
-        return $firstRole ? $firstRole->name : 'user';
+        return $firstRole ? $firstRole->name : 'member';
     }
     
     /**
@@ -163,12 +165,24 @@ class User extends Authenticatable
     }
     
     /**
-     * Check if this user is the first registered administrator
+     * Check if this user is the super admin (first registered admin)
      */
-    public function isFirstAdmin()
+    public function isSuperAdmin()
     {
-        // Check if this user has admin role and is the first user in the system
-        return $this->hasRole('admin') && $this->id === User::orderBy('id')->first()?->id;
+        // Get the first admin by registration date (earliest created_at)
+        $firstAdmin = User::whereHas('roles', function($q) {
+            $q->where('name', 'admin');
+        })->orderBy('created_at')->first();
+        
+        return $this->hasRole('admin') && $firstAdmin && $this->id === $firstAdmin->id;
+    }
+    
+    /**
+     * Check if this user is a regular admin (not super admin)
+     */
+    public function isRegularAdmin()
+    {
+        return $this->hasRole('admin') && !$this->isSuperAdmin();
     }
     
     /**
@@ -176,7 +190,15 @@ class User extends Authenticatable
      */
     public function canBeManaged()
     {
-        return !$this->isFirstAdmin();
+        return !$this->isSuperAdmin();
+    }
+    
+    /**
+     * Check if this user should be visible in dashboard
+     */
+    public function isVisibleInDashboard()
+    {
+        return !$this->isSuperAdmin();
     }
     
     /**
@@ -193,6 +215,36 @@ class User extends Authenticatable
     public function approvedUsers()
     {
         return $this->hasMany(User::class, 'approved_by');
+    }
+    
+    /**
+     * Get the admin that this user belongs to
+     */
+    public function admin()
+    {
+        return $this->belongsTo(User::class, 'admin_id');
+    }
+    
+    /**
+     * Get members under this admin
+     */
+    public function members()
+    {
+        return $this->hasMany(User::class, 'admin_id');
+    }
+    
+    /**
+     * Get all members in the same admin group (including self if admin)
+     */
+    public function adminGroup()
+    {
+        if ($this->hasRole('admin')) {
+            // If this user is an admin, return their members plus themselves
+            return User::where('admin_id', $this->id)->orWhere('id', $this->id);
+        } else {
+            // If this user is a member, return all members in the same group plus the admin
+            return User::where('admin_id', $this->admin_id)->orWhere('id', $this->admin_id);
+        }
     }
     
     /**
@@ -241,5 +293,68 @@ class User extends Authenticatable
     public function scopeRejected($query)
     {
         return $query->where('approval_status', 'rejected');
+    }
+    
+    /**
+     * Check if user is an admin
+     */
+    public function isAdmin()
+    {
+        return $this->hasRole('admin');
+    }
+    
+    /**
+     * Check if user is a member (has member role)
+     */
+    public function isMember()
+    {
+        return $this->hasRole('member');
+    }
+    
+    /**
+     * Assign user to an admin group
+     */
+    public function assignToAdmin($adminId, $groupName = null)
+    {
+        $admin = User::find($adminId);
+        if ($admin && $admin->hasRole('admin')) {
+            $this->update([
+                'admin_id' => $adminId,
+                'admin_group_name' => $groupName ?: $admin->name . "'s Group"
+            ]);
+        }
+        return $this;
+    }
+    
+    /**
+     * Scope to get users accessible by a specific admin
+     */
+    public function scopeAccessibleByAdmin($query, $adminId)
+    {
+        return $query->where(function($q) use ($adminId) {
+            $q->where('admin_id', $adminId)  // Members of this admin
+              ->orWhere('id', $adminId);     // Include the admin themselves
+        });
+    }
+    
+    /**
+     * Scope to get only orphaned users (no admin assigned)
+     */
+    public function scopeOrphaned($query)
+    {
+        return $query->whereNull('admin_id')->whereDoesntHave('roles', function($q) {
+            $q->where('name', 'admin');
+        });
+    }
+    
+    /**
+     * Get the admin's members count
+     */
+    public function getMembersCountAttribute()
+    {
+        if ($this->isAdmin()) {
+            return $this->members()->count();
+        }
+        return 0;
     }
 }

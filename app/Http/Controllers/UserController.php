@@ -15,7 +15,28 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
+        $currentUser = auth()->user();
         $query = User::query();
+
+        // Apply filtering based on user type
+        if ($currentUser->isSuperAdmin()) {
+            // Super admin can see all users EXCEPT themselves (hidden from dashboard)
+            $query->where('id', '!=', $currentUser->id);
+        } elseif ($currentUser->isRegularAdmin()) {
+            // Regular admins can only see their own members (not other admins)
+            $query->where('admin_id', $currentUser->id);
+        } else {
+            // Members can only see themselves and other members in their group
+            if ($currentUser->admin_id) {
+                $query->where(function($q) use ($currentUser) {
+                    $q->where('admin_id', $currentUser->admin_id)
+                      ->orWhere('id', $currentUser->id);
+                });
+            } else {
+                // Orphaned users can only see themselves
+                $query->where('id', $currentUser->id);
+            }
+        }
 
         // Search functionality
         if ($request->filled('search')) {
@@ -25,7 +46,7 @@ class UserController extends Controller
             });
         }
 
-        $users = $query->paginate(10)->withQueryString();
+        $users = $query->with(['roles', 'admin'])->paginate(10)->withQueryString();
         
         // Get roles from database (exclude admin role for filtering)
         $roles = Role::active()->where('name', '!=', 'admin')->get();
@@ -63,17 +84,24 @@ class UserController extends Controller
             return back()->withErrors(['roles' => 'Administrator role cannot be assigned through user management.'])->withInput();
         }
 
+        $currentUser = auth()->user();
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
 
-        // Assign roles if provided, otherwise assign default 'user' role
+        // Assign to current admin if current user is a regular admin
+        if ($currentUser->isRegularAdmin()) {
+            $user->assignToAdmin($currentUser->id, $currentUser->name . "'s Group");
+        }
+
+        // Assign roles if provided, otherwise assign default 'member' role
         if ($request->has('roles') && !empty($request->roles)) {
             $user->roles()->sync($request->roles);
         } else {
-            $defaultRole = Role::where('name', 'user')->first();
+            $defaultRole = Role::where('name', 'member')->first();
             if ($defaultRole) {
                 $user->roles()->attach($defaultRole);
             }
@@ -88,6 +116,14 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
+        $currentUser = auth()->user();
+        
+        // Check if current user can access this user
+        if (!$this->canAccessUser($currentUser, $user)) {
+            return redirect()->route('users.index')
+                ->with('error', 'You do not have permission to view this user.');
+        }
+        
         return view('users.show', compact('user'));
     }
 
@@ -96,10 +132,30 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
+        $currentUser = auth()->user();
+        
+        // Check if current user can access this user
+        if (!$this->canAccessUser($currentUser, $user)) {
+            return redirect()->route('users.index')
+                ->with('error', 'You do not have permission to edit this user.');
+        }
+        
         // Check if user can be managed
         if (!$user->canBeManaged()) {
             return redirect()->route('users.index')
                 ->with('error', 'The first administrator cannot be edited for security reasons.');
+        }
+        
+        // Regular admins cannot edit admin accounts
+        if ($currentUser->isRegularAdmin() && $user->isRegularAdmin()) {
+            return redirect()->route('users.index')
+                ->with('error', 'Regular administrators cannot edit admin accounts.');
+        }
+        
+        // Only super admin can edit admin accounts
+        if ($user->isRegularAdmin() && !$currentUser->isSuperAdmin()) {
+            return redirect()->route('users.index')
+                ->with('error', 'Only the super administrator can edit admin accounts.');
         }
         
         // Get roles from database (exclude admin role)
@@ -113,6 +169,14 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+        $currentUser = auth()->user();
+        
+        // Check if current user can access this user
+        if (!$this->canAccessUser($currentUser, $user)) {
+            return redirect()->route('users.index')
+                ->with('error', 'You do not have permission to edit this user.');
+        }
+        
         // Check if user can be managed
         if (!$user->canBeManaged()) {
             return redirect()->route('users.index')
@@ -131,6 +195,16 @@ class UserController extends Controller
         $adminRole = Role::where('name', 'admin')->first();
         if ($adminRole && $request->has('roles') && in_array($adminRole->id, $request->roles)) {
             return back()->withErrors(['roles' => 'Administrator role cannot be assigned through user management.'])->withInput();
+        }
+        
+        // Regular admins cannot edit admin accounts
+        if ($currentUser->isRegularAdmin() && $user->isRegularAdmin()) {
+            return back()->with('error', 'Regular administrators cannot edit admin accounts.');
+        }
+        
+        // Only super admin can edit admin accounts
+        if ($user->isRegularAdmin() && !$currentUser->isSuperAdmin()) {
+            return back()->with('error', 'Only the super administrator can edit admin accounts.');
         }
 
         $user->update([
@@ -153,6 +227,14 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+        $currentUser = auth()->user();
+        
+        // Check if current user can access this user
+        if (!$this->canAccessUser($currentUser, $user)) {
+            return redirect()->route('users.index')
+                ->with('error', 'You do not have permission to delete this user.');
+        }
+        
         // Check if user can be managed
         if (!$user->canBeManaged()) {
             return redirect()->route('users.index')
@@ -162,10 +244,48 @@ class UserController extends Controller
         if ($user->id === auth()->id()) {
             return back()->with('error', 'You cannot delete your own account!');
         }
+        
+        // Regular admins cannot delete admin accounts (including themselves)
+        if ($currentUser->isRegularAdmin() && $user->isRegularAdmin()) {
+            return back()->with('error', 'Regular administrators cannot delete admin accounts.');
+        }
+        
+        // Only super admin can delete admin accounts
+        if ($user->isRegularAdmin() && !$currentUser->isSuperAdmin()) {
+            return back()->with('error', 'Only the super administrator can delete admin accounts.');
+        }
 
         $user->delete();
 
         return redirect()->route('users.index')
             ->with('success', 'User deleted successfully!');
+    }
+    
+    /**
+     * Check if current user can access the target user
+     */
+    private function canAccessUser($currentUser, $targetUser)
+    {
+        // Super admin can access all users except themselves (they're hidden)
+        if ($currentUser->isSuperAdmin()) {
+            return $targetUser->id !== $currentUser->id;
+        }
+        
+        // Users can always access themselves
+        if ($currentUser->id === $targetUser->id) {
+            return true;
+        }
+        
+        // Regular admins can access their members only
+        if ($currentUser->isRegularAdmin() && $targetUser->admin_id === $currentUser->id) {
+            return true;
+        }
+        
+        // Members can access other members in the same group
+        if ($currentUser->isMember() && $currentUser->admin_id === $targetUser->admin_id) {
+            return true;
+        }
+        
+        return false;
     }
 }

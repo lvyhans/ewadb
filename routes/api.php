@@ -54,16 +54,33 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/users/pending', [UserApprovalController::class, 'getPendingUsers']);
         Route::get('/users/{userId}', [UserApprovalController::class, 'getUserDetails']);
         
-        // Approval actions
+        // Standard approval actions
         Route::post('/users/{userId}/approve', [UserApprovalController::class, 'approveUser']);
         Route::post('/users/{userId}/reject', [UserApprovalController::class, 'rejectUser']);
         Route::post('/users/{userId}/pending', [UserApprovalController::class, 'setPendingStatus']);
         
+        // Enhanced approval actions for third-party integration
+        Route::post('/users/{userId}/enhanced-approve', [UserApprovalController::class, 'enhancedApproveUser']);
+        Route::post('/users/{userId}/enhanced-reject', [UserApprovalController::class, 'enhancedRejectUser']);
+        
         // Bulk operations
         Route::post('/users/bulk-approve', [UserApprovalController::class, 'bulkApproveUsers']);
+        Route::post('/users/bulk-actions', [UserApprovalController::class, 'bulkUserActions']);
         
         // Statistics
         Route::get('/stats', [UserApprovalController::class, 'getApprovalStats']);
+    });
+
+    // Admin Hierarchy API Routes
+    Route::prefix('admin-hierarchy')->group(function () {
+        // Get all admins with their members and complete details
+        Route::get('/admins', [\App\Http\Controllers\Api\AdminHierarchyController::class, 'getAllAdmins']);
+        
+        // Get specific admin with members
+        Route::get('/admins/{adminId}', [\App\Http\Controllers\Api\AdminHierarchyController::class, 'getAdminWithMembers']);
+        
+        // Get hierarchy statistics
+        Route::get('/stats', [\App\Http\Controllers\Api\AdminHierarchyController::class, 'getHierarchyStats']);
     });
 });
 

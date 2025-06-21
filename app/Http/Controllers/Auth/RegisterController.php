@@ -96,7 +96,7 @@ class RegisterController extends Controller
         // Assign role based on registration order
         $userCount = User::count();
         if ($userCount === 1) {
-            // First user gets Administrator role and is auto-approved
+            // First user gets Administrator role and is auto-approved (becomes super admin)
             $adminRole = Role::where('name', 'admin')->first();
             if ($adminRole) {
                 $user->roles()->attach($adminRole);
@@ -108,15 +108,52 @@ class RegisterController extends Controller
                 ]);
             }
         } else {
-            // Subsequent users get default User role but remain pending
-            $userRole = Role::where('name', 'user')->first();
-            if ($userRole) {
-                $user->roles()->attach($userRole);
+            // All subsequent users get default Member role and are assigned to an admin
+            $memberRole = Role::where('name', 'member')->first();
+            if ($memberRole) {
+                $user->roles()->attach($memberRole);
             }
+            
+            // Find an admin to assign this user to
+            $this->assignUserToAdmin($user, $request);
         }
 
         return redirect()->route('registration.success')
             ->with('success', 'Registration submitted successfully! You can now login to your account.');
+    }
+
+    /**
+     * Assign user to an available admin
+     */
+    private function assignUserToAdmin($user, $request)
+    {
+        // Check if there's a specific admin invitation
+        $invitingAdminId = $request->get('admin_id');
+        
+        if ($invitingAdminId) {
+            $admin = User::find($invitingAdminId);
+            if ($admin && $admin->isRegularAdmin()) {
+                $user->assignToAdmin($invitingAdminId, $admin->name . "'s Group");
+                return;
+            }
+        }
+        
+        // Find the admin with the least members for load balancing
+        $availableAdmins = User::whereHas('roles', function($q) {
+            $q->where('name', 'admin');
+        })->get()->filter(function($admin) {
+            return $admin->isRegularAdmin();
+        });
+        
+        if ($availableAdmins->isNotEmpty()) {
+            // Sort by member count (ascending) to balance load
+            $selectedAdmin = $availableAdmins->sortBy(function($admin) {
+                return $admin->members()->count();
+            })->first();
+            
+            $user->assignToAdmin($selectedAdmin->id, $selectedAdmin->name . "'s Group");
+        }
+        // Note: If no admins available, user will remain orphaned but this should be rare
     }
 
     /**
@@ -125,5 +162,67 @@ class RegisterController extends Controller
     public function registrationSuccess()
     {
         return view('auth.registration-success');
+    }
+
+    /**
+     * Show admin registration form (only accessible by super admin)
+     */
+    public function showAdminRegistrationForm()
+    {
+        // Only super admin can access this form
+        if (!auth()->check() || !auth()->user()->isSuperAdmin()) {
+            return redirect()->route('users.index')
+                ->with('error', 'Only the super administrator can create admin accounts.');
+        }
+        
+        return view('auth.register-admin');
+    }
+
+    /**
+     * Handle admin registration (only accessible by super admin)
+     */
+    public function registerAdmin(Request $request)
+    {
+        // Only super admin can create admin accounts
+        if (!auth()->check() || !auth()->user()->isSuperAdmin()) {
+            return redirect()->route('users.index')
+                ->with('error', 'Only the super administrator can create admin accounts.');
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => ['required', 'confirmed', Password::min(8)],
+            'company_name' => 'required|string|max:255',
+            'phone' => 'required|string|max:15',
+            'city' => 'required|string|max:255',
+            'state' => 'required|string|max:255',
+            'zip' => 'required|string|max:10',
+        ]);
+
+        // Create admin user
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'company_name' => $validated['company_name'],
+            'phone' => $validated['phone'],
+            'city' => $validated['city'],
+            'state' => $validated['state'],
+            'zip' => $validated['zip'],
+            'approval_status' => 'approved', // Admins are auto-approved
+            'approved_at' => now(),
+            'approved_by' => auth()->id(),
+            'email_verified_at' => now(), // Auto-verify admin emails
+        ]);
+
+        // Assign admin role
+        $adminRole = Role::where('name', 'admin')->first();
+        if ($adminRole) {
+            $user->roles()->attach($adminRole);
+        }
+
+        return redirect()->route('users.index')
+            ->with('success', 'Administrator account created successfully!');
     }
 }

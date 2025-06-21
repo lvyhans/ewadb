@@ -11,14 +11,23 @@
                 <h1 class="text-2xl font-bold text-gray-900">Users</h1>
                 <p class="mt-1 text-sm text-gray-600">Manage system users and their roles</p>
             </div>
-            <div class="mt-4 sm:mt-0">
+            <div class="mt-4 sm:mt-0 flex space-x-2">
                 <a href="{{ route('users.create') }}" 
                    class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
-                    Add New User
+                    Add New Member
                 </a>
+                @if(auth()->user()->isSuperAdmin())
+                    <a href="{{ route('admin.register.form') }}" 
+                       class="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                        Create Admin
+                    </a>
+                @endif
             </div>
         </div>
 
@@ -81,6 +90,9 @@
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                            @if(auth()->user()->isSuperAdmin())
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin Group</th>
+                            @endif
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -104,7 +116,7 @@
                                 <div class="flex flex-wrap gap-1">
                                     @forelse($user->roles as $role)
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                                   {{ $role->name === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
+                                                   {{ $role->name === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800' }}">
                                             {{ $role->display_name }}
                                         </span>
                                     @empty
@@ -114,6 +126,27 @@
                                     @endforelse
                                 </div>
                             </td>
+                            @if(auth()->user()->isSuperAdmin())
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @if($user->hasRole('admin'))
+                                        <div class="text-sm">
+                                            <div class="font-medium text-purple-900">
+                                                {{ $user->isSuperAdmin() ? 'Super Admin' : 'Admin' }}
+                                            </div>
+                                            @if($user->isRegularAdmin())
+                                                <div class="text-xs text-purple-600">{{ $user->members_count }} members</div>
+                                            @endif
+                                        </div>
+                                    @elseif($user->admin)
+                                        <div class="text-sm">
+                                            <div class="font-medium text-gray-900">{{ $user->admin->name }}</div>
+                                            <div class="text-xs text-gray-500">{{ $user->admin_group_name ?: 'Member' }}</div>
+                                        </div>
+                                    @else
+                                        <span class="text-sm text-gray-400">Independent</span>
+                                    @endif
+                                </td>
+                            @endif
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                     Active
@@ -133,7 +166,7 @@
                                         </svg>
                                     </a>
                                     
-                                    @if($user->canBeManaged())
+                                    @if($user->canBeManaged() && (auth()->user()->isSuperAdmin() || !$user->isRegularAdmin()))
                                         <a href="{{ route('users.edit', $user) }}" 
                                            class="text-green-600 hover:text-green-900 p-1 rounded transition-colors"
                                            title="Edit User">
@@ -142,7 +175,7 @@
                                             </svg>
                                         </a>
                                         
-                                        @if($user->id !== auth()->id())
+                                        @if($user->id !== auth()->id() && (auth()->user()->isSuperAdmin() || !$user->isRegularAdmin()))
                                             <form method="POST" action="{{ route('users.destroy', $user) }}" class="inline">
                                                 @csrf
                                                 @method('DELETE')
@@ -156,6 +189,15 @@
                                                 </button>
                                             </form>
                                         @endif
+                                    @elseif($user->isRegularAdmin() && auth()->user()->isRegularAdmin())
+                                        <div class="flex items-center space-x-2">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                                </svg>
+                                                Admin
+                                            </span>
+                                        </div>
                                     @else
                                         <div class="flex items-center space-x-2">
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">

@@ -1,0 +1,549 @@
+{
+	"info": {
+		"_postman_id": "admin-hierarchy-api-collection",
+		"name": "Admin Hierarchy & User Approval API",
+		"description": "Complete API collection for testing Admin Hierarchy and User Approval endpoints. Designed for third-party software integration.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{api_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string",
+			"description": "Base URL of your Laravel application"
+		},
+		{
+			"key": "api_token",
+			"value": "your-api-token-here",
+			"type": "string",
+			"description": "Your Laravel Sanctum API token"
+		}
+	],
+	"item": [
+		{
+			"name": "Admin Hierarchy Management",
+			"item": [
+				{
+					"name": "Get All Admins with Complete Hierarchy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin-hierarchy/admins",
+							"host": ["{{base_url}}"],
+							"path": ["api", "admin-hierarchy", "admins"]
+						},
+						"description": "Retrieves all administrators with their complete member details, statistics, and documents. Only accessible by Super Administrators. Returns comprehensive data for third-party software integration."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Specific Admin with Members",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin-hierarchy/admins/:adminId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "admin-hierarchy", "admins", ":adminId"],
+							"variable": [
+								{
+									"key": "adminId",
+									"value": "2",
+									"description": "ID of the admin to retrieve"
+								}
+							]
+						},
+						"description": "Retrieves a specific administrator with their members. Accessible by Super Admin or the specific admin themselves."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Hierarchy Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin-hierarchy/stats",
+							"host": ["{{base_url}}"],
+							"path": ["api", "admin-hierarchy", "stats"]
+						},
+						"description": "Retrieves role-based statistics. Super Admins see system-wide stats, Regular Admins see their group stats."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing and retrieving admin hierarchy information"
+		},
+		{
+			"name": "Enhanced User Approval",
+			"item": [
+				{
+					"name": "Enhanced User Approval",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"approved_by\": 1,\n    \"notes\": \"Approved after thorough document verification\",\n    \"notification_preferences\": {\n        \"email\": true,\n        \"sms\": false\n    },\n    \"auto_assign_admin\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/users/:userId/enhanced-approve",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "users", ":userId", "enhanced-approve"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "3",
+									"description": "ID of the user to approve"
+								}
+							]
+						},
+						"description": "Enhanced user approval with additional metadata and auto-assignment features for third-party integration."
+					},
+					"response": []
+				},
+				{
+					"name": "Enhanced User Rejection",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"rejection_reason\": \"Incomplete documentation - missing GST certificate\",\n    \"rejected_by\": 1,\n    \"notes\": \"User needs to upload valid GST certificate and bank statement\",\n    \"allow_reapplication\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/users/:userId/enhanced-reject",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "users", ":userId", "enhanced-reject"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "4",
+									"description": "ID of the user to reject"
+								}
+							]
+						},
+						"description": "Enhanced user rejection with detailed reasoning and reapplication settings."
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk User Actions (Approve)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"action\": \"approve\",\n    \"user_ids\": [5, 6, 7, 8],\n    \"approved_by\": 1,\n    \"notes\": \"Bulk approval after batch verification process\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/users/bulk-actions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "users", "bulk-actions"]
+						},
+						"description": "Perform bulk approve action on multiple users with detailed result tracking."
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk User Actions (Reject)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"action\": \"reject\",\n    \"user_ids\": [9, 10, 11],\n    \"rejection_reason\": \"Batch rejection - documents not meeting compliance standards\",\n    \"notes\": \"All users in this batch need to resubmit documentation\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/users/bulk-actions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "users", "bulk-actions"]
+						},
+						"description": "Perform bulk reject action on multiple users."
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk User Actions (Set Pending)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"action\": \"pending\",\n    \"user_ids\": [12, 13, 14],\n    \"notes\": \"Set to pending for additional review\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/users/bulk-actions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "users", "bulk-actions"]
+						},
+						"description": "Set multiple users back to pending status."
+					},
+					"response": []
+				}
+			],
+			"description": "Enhanced approval and rejection endpoints for third-party integration"
+		},
+		{
+			"name": "User Data Retrieval",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/users?per_page=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "users"],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "20",
+									"description": "Number of users per page"
+								}
+							]
+						},
+						"description": "Get all users with pagination (filtered by admin hierarchy)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pending Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/users?status=pending&per_page=15",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "users"],
+							"query": [
+								{
+									"key": "status",
+									"value": "pending",
+									"description": "Filter by approval status"
+								},
+								{
+									"key": "per_page",
+									"value": "15",
+									"description": "Number of users per page"
+								}
+							]
+						},
+						"description": "Get users with pending approval status."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Approved Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/users?status=approved&per_page=15",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "users"],
+							"query": [
+								{
+									"key": "status",
+									"value": "approved",
+									"description": "Filter by approval status"
+								},
+								{
+									"key": "per_page",
+									"value": "15",
+									"description": "Number of users per page"
+								}
+							]
+						},
+						"description": "Get users with approved status."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Rejected Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/users?status=rejected&per_page=15",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "users"],
+							"query": [
+								{
+									"key": "status",
+									"value": "rejected",
+									"description": "Filter by approval status"
+								},
+								{
+									"key": "per_page",
+									"value": "15",
+									"description": "Number of users per page"
+								}
+							]
+						},
+						"description": "Get users with rejected status."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/users/:userId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "users", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "3",
+									"description": "ID of the user to retrieve"
+								}
+							]
+						},
+						"description": "Get detailed information about a specific user."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for retrieving user data with various filters"
+		},
+		{
+			"name": "Statistics & Analytics",
+			"item": [
+				{
+					"name": "User Approval Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/stats",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "stats"]
+						},
+						"description": "Get approval statistics including total users, approved, pending, and rejected counts."
+					},
+					"response": []
+				}
+			],
+			"description": "Statistical endpoints for analytics and reporting"
+		},
+		{
+			"name": "Standard Approval Operations",
+			"item": [
+				{
+					"name": "Standard User Approval",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"approved_by\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/users/:userId/approve",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "users", ":userId", "approve"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "3",
+									"description": "ID of the user to approve"
+								}
+							]
+						},
+						"description": "Standard user approval endpoint (legacy)."
+					},
+					"response": []
+				},
+				{
+					"name": "Standard User Rejection",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"rejection_reason\": \"Documents not compliant\",\n    \"rejected_by\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-approval/users/:userId/reject",
+							"host": ["{{base_url}}"],
+							"path": ["api", "user-approval", "users", ":userId", "reject"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "4",
+									"description": "ID of the user to reject"
+								}
+							]
+						},
+						"description": "Standard user rejection endpoint (legacy)."
+					},
+					"response": []
+				}
+			],
+			"description": "Standard approval operations (for backward compatibility)"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Set up environment variables if needed",
+					"if (!pm.environment.get('api_token')) {",
+					"    console.log('Warning: API token not set in environment variables');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Basic response validation",
+					"pm.test('Status code is successful', function () {",
+					"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+					"});",
+					"",
+					"pm.test('Response has correct content type', function () {",
+					"    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+					"});",
+					"",
+					"pm.test('Response has status field', function () {",
+					"    const jsonData = pm.response.json();",
+					"    pm.expect(jsonData).to.have.property('status');",
+					"});",
+					"",
+					"pm.test('Response has message field', function () {",
+					"    const jsonData = pm.response.json();",
+					"    pm.expect(jsonData).to.have.property('message');",
+					"});"
+				]
+			}
+		}
+	]
+}
