@@ -213,6 +213,7 @@
                     </a>
                     
                     <!-- User Management -->
+                    @if(!auth()->user()->isMember())
                     <div x-data="{ open: {{ request()->routeIs('users.*') ? 'true' : 'false' }} }">
                         <button @click="open = !open" 
                                 class="nav-item w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-white/80 rounded-xl hover:bg-white/10 hover:text-white transition-all duration-200 group">
@@ -246,6 +247,7 @@
                             </a>
                         </div>
                     </div>
+                    @endif
                     
                     <!-- Settings -->
                     <a href="{{ route('settings.index') }}" 

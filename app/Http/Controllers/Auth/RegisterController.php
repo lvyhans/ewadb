@@ -108,19 +108,20 @@ class RegisterController extends Controller
                 ]);
             }
         } else {
-            // All subsequent users get Regular Admin role and remain pending for super admin approval
+            // All subsequent users get Admin role (Regular Administrators) and require approval
             $adminRole = Role::where('name', 'admin')->first();
             if ($adminRole) {
                 $user->roles()->attach($adminRole);
+                
+                // Regular admins remain pending until super admin approves them
+                // They don't get assigned to other admins since they are admins themselves
             }
             
-            // Note: Regular admins created through public registration remain pending
-            // They will become "Regular Admins" after super admin approval
-            // No admin assignment needed as they will manage their own groups
+            // Note: Regular admins require super admin approval before they can login
         }
 
         return redirect()->route('registration.success')
-            ->with('success', 'Registration submitted successfully! You can now login to your account.');
+            ->with('success', 'Admin registration submitted successfully! Your account requires approval before you can login.');
     }
 
     /**

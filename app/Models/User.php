@@ -99,7 +99,7 @@ class User extends Authenticatable
     public function getRoleAttribute()
     {
         $firstRole = $this->roles()->first();
-        return $firstRole ? $firstRole->name : 'admin';
+        return $firstRole ? $firstRole->name : 'member';
     }
     
     /**
@@ -304,11 +304,11 @@ class User extends Authenticatable
     }
     
     /**
-     * Check if user is a member (regular admin who is not super admin)
+     * Check if user is a member (has member role)
      */
     public function isMember()
     {
-        return $this->isRegularAdmin();
+        return $this->hasRole('member');
     }
     
     /**

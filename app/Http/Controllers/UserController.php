@@ -59,6 +59,14 @@ class UserController extends Controller
      */
     public function create()
     {
+        $currentUser = auth()->user();
+        
+        // Members cannot create users
+        if ($currentUser->isMember()) {
+            return redirect()->route('users.index')
+                ->with('error', 'Members do not have permission to create users.');
+        }
+        
         // Get roles from database (exclude admin role)
         $roles = Role::active()->where('name', '!=', 'admin')->get();
         
@@ -70,6 +78,14 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        $currentUser = auth()->user();
+        
+        // Members cannot create users
+        if ($currentUser->isMember()) {
+            return redirect()->route('users.index')
+                ->with('error', 'Members do not have permission to create users.');
+        }
+        
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
@@ -84,8 +100,6 @@ class UserController extends Controller
             return back()->withErrors(['roles' => 'Administrator role cannot be assigned through user management.'])->withInput();
         }
 
-        $currentUser = auth()->user();
-
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -97,11 +111,11 @@ class UserController extends Controller
             $user->assignToAdmin($currentUser->id, $currentUser->name . "'s Group");
         }
 
-        // Assign roles if provided, otherwise assign default 'admin' role
+        // Assign roles if provided, otherwise assign default 'member' role
         if ($request->has('roles') && !empty($request->roles)) {
             $user->roles()->sync($request->roles);
         } else {
-            $defaultRole = Role::where('name', 'admin')->first();
+            $defaultRole = Role::where('name', 'member')->first();
             if ($defaultRole) {
                 $user->roles()->attach($defaultRole);
             }
@@ -134,6 +148,12 @@ class UserController extends Controller
     {
         $currentUser = auth()->user();
         
+        // Members can only edit themselves
+        if ($currentUser->isMember() && $currentUser->id !== $user->id) {
+            return redirect()->route('users.index')
+                ->with('error', 'Members can only edit their own profile.');
+        }
+        
         // Check if current user can access this user
         if (!$this->canAccessUser($currentUser, $user)) {
             return redirect()->route('users.index')
@@ -158,10 +178,7 @@ class UserController extends Controller
                 ->with('error', 'Only the super administrator can edit admin accounts.');
         }
         
-        // Get roles from database (exclude admin role)
-        $roles = Role::active()->where('name', '!=', 'admin')->get();
-        
-        return view('users.edit', compact('user', 'roles'));
+        return view('users.edit', compact('user'));
     }
 
     /**
@@ -170,6 +187,12 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $currentUser = auth()->user();
+        
+        // Members can only edit themselves
+        if ($currentUser->isMember() && $currentUser->id !== $user->id) {
+            return redirect()->route('users.index')
+                ->with('error', 'Members can only edit their own profile.');
+        }
         
         // Check if current user can access this user
         if (!$this->canAccessUser($currentUser, $user)) {
@@ -187,36 +210,13 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:8|confirmed',
-            'roles' => 'array',
-            'roles.*' => 'exists:roles,id',
         ]);
-
-        // Prevent admin role assignment through user management
-        $adminRole = Role::where('name', 'admin')->first();
-        if ($adminRole && $request->has('roles') && in_array($adminRole->id, $request->roles)) {
-            return back()->withErrors(['roles' => 'Administrator role cannot be assigned through user management.'])->withInput();
-        }
-        
-        // Regular admins cannot edit admin accounts
-        if ($currentUser->isRegularAdmin() && $user->isRegularAdmin()) {
-            return back()->with('error', 'Regular administrators cannot edit admin accounts.');
-        }
-        
-        // Only super admin can edit admin accounts
-        if ($user->isRegularAdmin() && !$currentUser->isSuperAdmin()) {
-            return back()->with('error', 'Only the super administrator can edit admin accounts.');
-        }
 
         $user->update([
             'name' => $request->name,
             'email' => $request->email,
             'password' => $request->password ? Hash::make($request->password) : $user->password,
         ]);
-
-        // Update roles if provided (admin role will be filtered out by validation above)
-        if ($request->has('roles')) {
-            $user->roles()->sync($request->roles);
-        }
 
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully!');
@@ -228,6 +228,12 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         $currentUser = auth()->user();
+        
+        // Members cannot delete any users
+        if ($currentUser->isMember()) {
+            return redirect()->route('users.index')
+                ->with('error', 'Members do not have permission to delete users.');
+        }
         
         // Check if current user can access this user
         if (!$this->canAccessUser($currentUser, $user)) {

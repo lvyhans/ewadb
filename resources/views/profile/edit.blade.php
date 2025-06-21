@@ -80,9 +80,30 @@
                     <p class="text-sm text-gray-500">{{ $user->email }}</p>
                     
                     <div class="mt-3">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-1">
-                            {{ $user->email === 'admin@example.com' ? 'Admin' : 'User' }}
-                        </span>
+                        @forelse($user->roles as $role)
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-1
+                                       {{ $role->name === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800' }}">
+                                {{ $role->display_name }}
+                                @if($role->name === 'admin')
+                                    <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                    </svg>
+                                @endif
+                            </span>
+                        @empty
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                No roles assigned
+                            </span>
+                        @endforelse
+                        
+                        @if($user->isSuperAdmin())
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Super Admin
+                            </span>
+                        @endif
                     </div>
                     
                     <div class="mt-4 text-xs text-gray-500">
@@ -150,92 +171,6 @@
                 </button>
             </div>
         </form>
-    </div>
-    
-    <!-- Delete Account Section -->
-    <div class="mt-6 bg-white shadow rounded-lg">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-red-900">Delete Account</h3>
-            <p class="mt-1 text-sm text-gray-600">Permanently delete your account and all associated data.</p>
-        </div>
-        
-        <div class="p-6" x-data="{ showDeleteModal: false }">
-            <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
-                <div class="flex">
-                    <svg class="w-5 h-5 text-red-400 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                    </svg>
-                    <div>
-                        <h4 class="text-sm font-medium text-red-800">Warning</h4>
-                        <p class="text-sm text-red-700 mt-1">Once your account is deleted, all of its resources and data will be permanently deleted. Before deleting your account, please download any data or information that you wish to retain.</p>
-                    </div>
-                </div>
-            </div>
-            
-            <button @click="showDeleteModal = true" 
-                    type="button" 
-                    class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
-                Delete Account
-            </button>
-            
-            <!-- Delete Confirmation Modal -->
-            <div x-show="showDeleteModal" 
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0"
-                 x-transition:enter-end="opacity-100"
-                 x-transition:leave="ease-in duration-200"
-                 x-transition:leave-start="opacity-100"
-                 x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 z-50 overflow-y-auto"
-                 style="display: none;">
-                <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
-                    
-                    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                        <form method="POST" action="{{ route('profile.destroy') }}">
-                            @csrf
-                            @method('DELETE')
-                            
-                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                <div class="sm:flex sm:items-start">
-                                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                                        <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                                        </svg>
-                                    </div>
-                                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                        <h3 class="text-lg leading-6 font-medium text-gray-900">Delete Account</h3>
-                                        <div class="mt-2">
-                                            <p class="text-sm text-gray-500">Are you sure you want to delete your account? This action cannot be undone.</p>
-                                            <div class="mt-4">
-                                                <label for="delete_password" class="block text-sm font-medium text-gray-700 mb-2">Confirm with your password</label>
-                                                <input type="password" 
-                                                       id="delete_password" 
-                                                       name="password" 
-                                                       placeholder="Enter your password"
-                                                       required
-                                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                <button type="submit" 
-                                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
-                                    Delete Account
-                                </button>
-                                <button @click="showDeleteModal = false" 
-                                        type="button" 
-                                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
