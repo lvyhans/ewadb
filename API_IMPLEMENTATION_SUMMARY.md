@@ -5,14 +5,41 @@
 This implementation provides comprehensive API endpoints for third-party software integration, specifically designed to:
 
 Bearer Token :
-1|E03FejFwFIbhe9IYYHdB3TkxicLDm9CrWGos46A081d85c3e
+2|JEyxTLv4eWZTauXikpmGbkMJ2zcDFN4hX1AF6NJ725469a46
 
+**Updated Registration System**: All users registering through public registration now receive **Regular Admin roles** instead of member roles.
 
 1. **Get all admins and their members** with complete data delivery
 2. **Approve/reject users via API** from external systems
 3. **Maintain admin hierarchy isolation** with proper permissions
 4. **Provide bulk operations** for efficiency
 5. **Deliver complete user data** including documents and metadata
+
+## 🔄 Updated Registration System
+
+### **NEW**: All Public Registrations Get Admin Role
+
+As of June 21, 2025, the registration system has been updated:
+
+#### **Registration Flow**:
+1. **First User**: Gets `admin` role → Becomes **Super Administrator** → Auto-approved
+2. **All Subsequent Users**: Get `admin` role → Become **Regular Administrators** → Status: `pending`
+
+#### **Role Assignment**:
+- ✅ **Public Registration** (`/register`): Admin role assigned
+- ✅ **Super Admin Creation** (`/register/admin`): Admin role assigned  
+- ✅ **Manual User Creation**: Admin role assigned by default
+
+#### **Approval Workflow**:
+- **Super Admin**: Auto-approved (system bootstrap)
+- **Regular Admins**: Require super admin approval via API or dashboard
+- **No Members**: All users are administrators at different levels
+
+#### **API Impact**:
+- All API endpoints work unchanged
+- Enhanced approval/rejection works for admin users
+- Bulk operations handle admin approvals efficiently
+- Admin hierarchy shows all registered users as admins
 
 ## 📋 New API Endpoints Created
 
@@ -278,12 +305,16 @@ The API implementation successfully provides:
 ✅ **Proper security** with role-based access control  
 ✅ **Comprehensive documentation** and testing tools  
 ✅ **Production-ready** error handling and validation  
+✅ **Updated registration system** with admin role assignment
 
 Third-party software can now fully integrate with the CRM system to:
-- Display complete admin hierarchies with member details
-- Approve/reject users with detailed reasoning and tracking
-- Perform bulk operations efficiently
-- Maintain data isolation between admin groups
+- Display complete admin hierarchies with all registered users as admins
+- Approve/reject admin users with detailed reasoning and tracking
+- Perform bulk operations efficiently on admin users
+- Maintain proper hierarchy between Super Admin and Regular Admins
 - Access all user data including documents and metadata
+- Handle the new admin-by-default registration workflow
+
+**Recent Update (June 21, 2025)**: Registration system updated so all new users receive Regular Admin roles instead of member roles, providing enhanced capabilities while maintaining proper approval workflows.
 
 The implementation is ready for production use and third-party integration.

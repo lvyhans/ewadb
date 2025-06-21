@@ -20,7 +20,7 @@
             <h1 class="text-2xl font-bold text-gray-900 mb-4">Registration Submitted Successfully!</h1>
             
             <div class="text-gray-600 space-y-3 mb-6">
-                <p>Thank you for registering as a Super Administrator.</p>
+                <p>Thank you for registering as a Administrator.</p>
                 <p>Your application has been submitted and is currently under review.</p>
                 <p class="font-medium text-orange-600">
                     ⏳ Your account is pending approval and you will not be able to login until it's approved by an administrator.

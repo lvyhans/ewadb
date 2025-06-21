@@ -97,11 +97,11 @@ class UserController extends Controller
             $user->assignToAdmin($currentUser->id, $currentUser->name . "'s Group");
         }
 
-        // Assign roles if provided, otherwise assign default 'member' role
+        // Assign roles if provided, otherwise assign default 'admin' role
         if ($request->has('roles') && !empty($request->roles)) {
             $user->roles()->sync($request->roles);
         } else {
-            $defaultRole = Role::where('name', 'member')->first();
+            $defaultRole = Role::where('name', 'admin')->first();
             if ($defaultRole) {
                 $user->roles()->attach($defaultRole);
             }

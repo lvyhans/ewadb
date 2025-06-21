@@ -108,14 +108,15 @@ class RegisterController extends Controller
                 ]);
             }
         } else {
-            // All subsequent users get default Member role and are assigned to an admin
-            $memberRole = Role::where('name', 'member')->first();
-            if ($memberRole) {
-                $user->roles()->attach($memberRole);
+            // All subsequent users get Regular Admin role and remain pending for super admin approval
+            $adminRole = Role::where('name', 'admin')->first();
+            if ($adminRole) {
+                $user->roles()->attach($adminRole);
             }
             
-            // Find an admin to assign this user to
-            $this->assignUserToAdmin($user, $request);
+            // Note: Regular admins created through public registration remain pending
+            // They will become "Regular Admins" after super admin approval
+            // No admin assignment needed as they will manage their own groups
         }
 
         return redirect()->route('registration.success')

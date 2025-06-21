@@ -94,12 +94,12 @@ class User extends Authenticatable
     }
     
     /**
-     * Get primary role name (first role or default to 'member')
+     * Get primary role name (first role or default to 'admin')
      */
     public function getRoleAttribute()
     {
         $firstRole = $this->roles()->first();
-        return $firstRole ? $firstRole->name : 'member';
+        return $firstRole ? $firstRole->name : 'admin';
     }
     
     /**
@@ -304,11 +304,11 @@ class User extends Authenticatable
     }
     
     /**
-     * Check if user is a member (has member role)
+     * Check if user is a member (regular admin who is not super admin)
      */
     public function isMember()
     {
-        return $this->hasRole('member');
+        return $this->isRegularAdmin();
     }
     
     /**
