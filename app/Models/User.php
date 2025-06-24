@@ -42,7 +42,11 @@ class User extends Authenticatable
         'approved_at',
         'approved_by',
         'admin_id',
-        'admin_group_name'
+        'admin_group_name',
+        'phone',
+        'city',
+        'state',
+        'zip'
     ];
 
     /**

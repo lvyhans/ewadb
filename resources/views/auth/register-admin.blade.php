@@ -77,6 +77,30 @@
                 <form method="POST" action="{{ route('admin.register') }}" x-data="adminForm()" @submit="onSubmit" class="space-y-8 p-8 lg:p-10">
                     @csrf
 
+                    @if ($errors->any())
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-red-800">
+                                        There were errors with your submission
+                                    </h3>
+                                    <div class="mt-2 text-sm text-red-700">
+                                        <ul class="list-disc list-inside space-y-1">
+                                            @foreach ($errors->all() as $error)
+                                                <li>{{ $error }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
                     <!-- Personal Information Section -->
                     <div class="border-b border-gray-200/60 pb-8">
                         <div class="flex items-center mb-6">
@@ -546,13 +570,11 @@
                                 <span>Cancel</span>
                             </a>
                             <button type="submit" 
-                                    :disabled="!formValid"
-                                    :class="formValid ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:scale-105' : 'bg-gray-400 cursor-not-allowed'"
-                                    class="px-8 py-3 border border-transparent rounded-xl text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 flex items-center space-x-2">
+                                    class="px-8 py-3 border border-transparent rounded-xl text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 flex items-center space-x-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                                 </svg>
-                                <span x-text="formValid ? 'Create Administrator' : 'Complete Required Fields'"></span>
+                                <span>Create Administrator</span>
                             </button>
                         </div>
                     </div>
@@ -682,11 +704,9 @@
                     event.target.value = value;
                 },
                 
-                onSubmit() {
-                    if (!this.formValid) {
-                        this.showValidationErrors();
-                        return false;
-                    }
+                onSubmit(event) {
+                    // Always allow form submission - let server handle validation
+                    console.log('Form submission attempt');
                     
                     // Add loading state
                     const submitButton = event.target.querySelector('button[type="submit"]');
@@ -701,6 +721,7 @@
                         `;
                     }
                     
+                    // Allow form to submit
                     return true;
                 },
                 

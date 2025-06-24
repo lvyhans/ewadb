@@ -191,40 +191,75 @@ class RegisterController extends Controller
                 ->with('error', 'Only the super administrator can create admin accounts.');
         }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => ['required', 'confirmed', Password::min(8)],
-            'company_name' => 'required|string|max:255',
-            'phone' => 'required|string|max:15',
-            'city' => 'required|string|max:255',
-            'state' => 'required|string|max:255',
-            'zip' => 'required|string|max:10',
+        // Log the incoming request
+        \Log::info('Admin registration attempt', [
+            'user_id' => auth()->id(),
+            'request_data' => $request->except(['password', 'password_confirmation'])
         ]);
 
-        // Create admin user
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'company_name' => $validated['company_name'],
-            'phone' => $validated['phone'],
-            'city' => $validated['city'],
-            'state' => $validated['state'],
-            'zip' => $validated['zip'],
-            'approval_status' => 'approved', // Admins are auto-approved
-            'approved_at' => now(),
-            'approved_by' => auth()->id(),
-            'email_verified_at' => now(), // Auto-verify admin emails
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users',
+                'password' => ['required', 'confirmed', Password::min(8)],
+                'company_name' => 'required|string|max:255',
+                'phone' => 'required|string|max:15',
+                'city' => 'required|string|max:255',
+                'state' => 'required|string|max:255',
+                'zip' => 'required|string|max:10',
+            ]);
 
-        // Assign admin role
-        $adminRole = Role::where('name', 'admin')->first();
-        if ($adminRole) {
-            $user->roles()->attach($adminRole);
+            \Log::info('Admin registration validation passed');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Admin registration validation failed', [
+                'errors' => $e->errors()
+            ]);
+            throw $e;
         }
 
-        return redirect()->route('users.index')
-            ->with('success', 'Administrator account created successfully!');
+        try {
+            // Create admin user
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'company_name' => $validated['company_name'],
+                'phone' => $validated['phone'],
+                'city' => $validated['city'],
+                'state' => $validated['state'],
+                'zip' => $validated['zip'],
+                'approval_status' => 'approved', // Admins are auto-approved
+                'approved_at' => now(),
+                'approved_by' => auth()->id(),
+                'email_verified_at' => now(), // Auto-verify admin emails
+            ]);
+
+            \Log::info('Admin user created successfully', ['user_id' => $user->id]);
+
+            // Assign admin role
+            $adminRole = Role::where('name', 'admin')->first();
+            if ($adminRole) {
+                $user->roles()->attach($adminRole);
+                \Log::info('Admin role assigned successfully');
+            } else {
+                \Log::warning('Admin role not found');
+            }
+
+            \Log::info('Admin registration completed successfully', ['user_id' => $user->id]);
+
+            return redirect()->route('users.index')
+                ->with('success', 'Administrator account created successfully!');
+
+        } catch (\Exception $e) {
+            \Log::error('Admin registration failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'An error occurred while creating the administrator account. Please try again.']);
+        }
     }
 }
