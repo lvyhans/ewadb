@@ -211,7 +211,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
-- `rejection_reason` (required): Reason for rejection (max 1000 characters)
+- `rejection_reason` (optional): Reason for rejection (max 1000 characters)
 - `rejected_by` (required): ID of the user performing the rejection
 
 **Response:**

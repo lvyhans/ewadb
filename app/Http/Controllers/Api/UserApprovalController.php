@@ -201,7 +201,7 @@ class UserApprovalController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'rejection_reason' => 'required|string|max:1000',
+                'rejection_reason' => 'nullable|string|max:1000',
                 'rejected_by' => 'required|integer|exists:users,id'
             ]);
 
@@ -493,7 +493,7 @@ class UserApprovalController extends Controller
             
             // Validate request data
             $validator = Validator::make($request->all(), [
-                'rejection_reason' => 'required|string|max:500',
+                'rejection_reason' => 'nullable|string|max:500',
                 'notes' => 'nullable|string|max:500'
             ]);
 
@@ -604,7 +604,7 @@ class UserApprovalController extends Controller
                 'user_ids' => 'required|array|min:1|max:100',
                 'user_ids.*' => 'integer|exists:users,id',
                 'notes' => 'nullable|string|max:500',
-                'rejection_reason' => 'required_if:action,reject|string|max:500',
+                'rejection_reason' => 'nullable|string|max:500',
                 'auto_assign_admin' => 'boolean'
             ]);
 

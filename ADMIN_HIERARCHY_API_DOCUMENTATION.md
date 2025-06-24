@@ -326,7 +326,7 @@ Authorization: Bearer {your-api-token}
 ```
 
 **Request Fields:**
-- `rejection_reason` (string, required): Reason for rejection (max 500 chars)
+- `rejection_reason` (string, optional): Reason for rejection (max 500 chars)
 - `rejected_by` (integer, required): ID of the user rejecting
 - `notes` (string, optional): Additional notes (max 1000 chars)
 - `allow_reapplication` (boolean, optional): Whether user can reapply
@@ -386,7 +386,7 @@ Authorization: Bearer {your-api-token}
 - `action` (string, required): "approve", "reject", or "pending"
 - `user_ids` (array, required): Array of user IDs to process
 - `approved_by` (integer, required if action=approve): ID of approver
-- `rejection_reason` (string, required if action=reject): Reason for rejection
+- `rejection_reason` (string, optional): Reason for rejection
 - `notes` (string, optional): Additional notes
 
 **Response Format:**
