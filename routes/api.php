@@ -135,6 +135,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Application API routes
     Route::prefix('applications')->group(function () {
         Route::post('/get-lead-data', [ApplicationController::class, 'getLeadData']);
+        Route::post('/get-country-qualification-data', [ApplicationController::class, 'getCountryQualificationData']);
     });
 
     // Lead Revert Management API Routes (Internal)
@@ -153,6 +154,19 @@ Route::middleware('auth:sanctum')->group(function () {
         // Statistics
         Route::get('/statistics', [\App\Http\Controllers\LeadRevertController::class, 'getStatistics']);
     });
+});
+
+// Public dropdown API routes for application form
+Route::prefix('dropdown')->group(function () {
+    Route::get('/countries', [ApplicationController::class, 'getCountries']);
+    Route::get('/cities', [ApplicationController::class, 'getCities']);
+    Route::get('/colleges', [ApplicationController::class, 'getColleges']);
+    Route::get('/courses', [ApplicationController::class, 'getCourses']);
+});
+
+// Public application data routes
+Route::prefix('applications')->group(function () {
+    Route::get('/get-lead-data', [ApplicationController::class, 'getLeadData']);
 });
 
 // Example admin routes

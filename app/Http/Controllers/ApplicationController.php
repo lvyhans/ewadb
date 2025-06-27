@@ -659,4 +659,124 @@ class ApplicationController extends Controller
             ]);
         }
     }
+
+    // Dropdown API methods for application form
+    public function getCountries(Request $request)
+    {
+        try {
+            $externalApiService = new ExternalApiService();
+            $countries = $externalApiService->getCountries();
+            
+            // Deduplicate and sort
+            $uniqueCountries = collect($countries)
+                ->unique('country_name')
+                ->sortBy('country_name')
+                ->values()
+                ->toArray();
+            
+            return response()->json($uniqueCountries);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching countries: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to fetch countries',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getCities(Request $request)
+    {
+        try {
+            $country = $request->get('country');
+            
+            if (!$country) {
+                return response()->json([
+                    'error' => 'Country parameter is required'
+                ], 400);
+            }
+
+            $externalApiService = new ExternalApiService();
+            $cities = $externalApiService->getCitiesByCountry($country);
+            
+            // Deduplicate and sort
+            $uniqueCities = collect($cities)
+                ->unique('city_name')
+                ->sortBy('city_name')
+                ->values()
+                ->toArray();
+            
+            return response()->json($uniqueCities);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching cities: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to fetch cities',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getColleges(Request $request)
+    {
+        try {
+            $country = $request->get('country');
+            $city = $request->get('city');
+            
+            if (!$country || !$city) {
+                return response()->json([
+                    'error' => 'Country and city parameters are required'
+                ], 400);
+            }
+
+            $externalApiService = new ExternalApiService();
+            $colleges = $externalApiService->getCollegesByCountryAndCity($country, $city);
+            
+            // Deduplicate and sort
+            $uniqueColleges = collect($colleges)
+                ->unique('college_name')
+                ->sortBy('college_name')
+                ->values()
+                ->toArray();
+            
+            return response()->json($uniqueColleges);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching colleges: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to fetch colleges',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getCourses(Request $request)
+    {
+        try {
+            $country = $request->get('country');
+            $city = $request->get('city');
+            $college = $request->get('college');
+            
+            if (!$country || !$city || !$college) {
+                return response()->json([
+                    'error' => 'Country, city, and college parameters are required'
+                ], 400);
+            }
+
+            $externalApiService = new ExternalApiService();
+            $courses = $externalApiService->getCoursesByCountryCityCollege($country, $city, $college);
+            
+            // Deduplicate and sort
+            $uniqueCourses = collect($courses)
+                ->unique('course_name')
+                ->sortBy('course_name')
+                ->values()
+                ->toArray();
+            
+            return response()->json($uniqueCourses);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching courses: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to fetch courses',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

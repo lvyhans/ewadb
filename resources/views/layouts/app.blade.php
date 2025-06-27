@@ -481,6 +481,17 @@
                         </div>
                     </div>
                     
+                    <!-- Course Finder -->
+                    <a href="{{ route('courses.finder') }}" 
+                       class="nav-item flex items-center px-4 py-3 text-sm font-medium text-white/80 rounded-xl hover:bg-white/10 hover:text-white transition-all duration-200 group {{ request()->routeIs('courses.*') ? 'bg-white/20 text-white shadow-lg' : '' }}">
+                        <div class="w-5 h-5 mr-3 transition-transform duration-200 group-hover:scale-110">
+                            <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                        <span>Course Finder</span>
+                    </a>
+                    
                     <!-- Settings -->
                     <a href="{{ route('settings.index') }}" 
                        class="nav-item flex items-center px-4 py-3 text-sm font-medium text-white/80 rounded-xl hover:bg-white/10 hover:text-white transition-all duration-200 group {{ request()->routeIs('settings.*') ? 'bg-white/20 text-white shadow-lg' : '' }}">

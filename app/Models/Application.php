@@ -105,6 +105,11 @@ class Application extends Model
         return $this->hasMany(ApplicationFollowup::class);
     }
 
+    public function courseOptions(): HasMany
+    {
+        return $this->hasMany(ApplicationCourseOption::class);
+    }
+
     // Generate unique application number
     public static function generateApplicationNumber()
     {

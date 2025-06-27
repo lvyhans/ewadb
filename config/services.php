@@ -38,6 +38,10 @@ return [
     'external_api' => [
         'enquiry_lead_url' => env('EXTERNAL_API_ENQUIRY_LEAD_URL'),
         'checklist_url' => env('EXTERNAL_API_CHECKLIST_URL'),
+        'countries_url' => env('EXTERNAL_API_COUNTRIES_URL'),
+        'cities_url' => env('EXTERNAL_API_CITIES_URL'),
+        'colleges_url' => env('EXTERNAL_API_COLLEGES_URL'),
+        'courses_url' => env('EXTERNAL_API_COURSES_URL'),
         'enabled' => env('EXTERNAL_API_ENABLED', false),
     ],
 

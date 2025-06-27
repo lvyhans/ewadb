@@ -54,6 +54,28 @@
             </div>
         </div>
 
+        <!-- Multiple Course Selection Banner -->
+        <div id="multipleCourseBanner" class="hidden bg-gradient-to-r from-green-500/20 to-blue-500/20 backdrop-blur-sm rounded-2xl shadow-xl border border-green-200/50 overflow-hidden mb-8">
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white mr-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Multiple Courses Selected</h3>
+                            <p class="text-gray-600">You have selected <span id="selectedCourseCount" class="font-medium text-green-600">0</span> courses from the course finder</p>
+                        </div>
+                    </div>
+                    <button onclick="hideMultipleCourseBanner()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm">
+                        Hide Banner
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Form Card -->
         <div class="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
             <div class="p-8">
@@ -110,6 +132,28 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Multiple Course Selection Section -->
+                <div id="multipleCourseSelection" class="hidden mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                        <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">📚</div>
+                        Selected Course Options
+                    </h3>
+                    
+                    <div class="bg-blue-50/50 rounded-xl p-6 backdrop-blur-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <p class="text-gray-700">Review and edit your selected course options below:</p>
+                            <button type="button" onclick="addNewCourseOption()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm">
+                                + Add Option
+                            </button>
+                        </div>
+                        
+                        <div id="selectedCoursesContainer" class="space-y-4">
+                            <!-- Selected courses will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Personal Details -->
                 <div class="mb-8">
                     <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
@@ -536,6 +580,12 @@ console.log('Employment count initialized:', employmentCount);
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Form JavaScript initialized');
     console.log('Current employment count:', employmentCount);
+    
+    // Check for multiple course selection from course finder
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('from') === 'course-finder' && urlParams.get('multiple') === 'true') {
+        handleMultipleCourseSelection();
+    }
     
     // Show reference name field when source is Reference
     const leadSource = document.getElementById('lead_source');
@@ -1590,6 +1640,169 @@ function showValidationError(message, documents) {
     const documentSection = document.getElementById('documentChecklistContainer');
     if (documentSection) {
         documentSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+// Multiple course selection functionality
+let selectedCoursesData = [];
+let courseCounter = 0;
+
+function handleMultipleCourseSelection() {
+    try {
+        const selectedCourses = localStorage.getItem('selectedCoursesForApplication');
+        if (selectedCourses) {
+            selectedCoursesData = JSON.parse(selectedCourses);
+            console.log('Multiple courses loaded:', selectedCoursesData);
+            
+            if (selectedCoursesData.length > 0) {
+                showMultipleCourseSection();
+                displaySelectedCourses();
+                
+                // Pre-select the common country in the main form
+                if (selectedCoursesData[0].country) {
+                    const countryField = document.querySelector('input[name="country"]');
+                    if (countryField) {
+                        countryField.value = selectedCoursesData[0].country;
+                        countryField.setAttribute('readonly', true);
+                        countryField.style.backgroundColor = '#f3f4f6';
+                    }
+                }
+                
+                // Clear localStorage
+                localStorage.removeItem('selectedCoursesForApplication');
+            }
+        }
+    } catch (error) {
+        console.error('Error handling multiple course selection:', error);
+    }
+}
+
+function showMultipleCourseSection() {
+    const banner = document.getElementById('multipleCourseBanner');
+    const section = document.getElementById('multipleCourseSelection');
+    const countSpan = document.getElementById('selectedCourseCount');
+    
+    if (banner && section && countSpan) {
+        banner.classList.remove('hidden');
+        section.classList.remove('hidden');
+        countSpan.textContent = selectedCoursesData.length;
+    }
+}
+
+function displaySelectedCourses() {
+    const container = document.getElementById('selectedCoursesContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    selectedCoursesData.forEach((course, index) => {
+        const courseDiv = createCourseOptionElement(course, index);
+        container.appendChild(courseDiv);
+    });
+}
+
+function createCourseOptionElement(courseData, index) {
+    const div = document.createElement('div');
+    div.className = 'bg-white/70 border border-gray-200 rounded-xl p-4';
+    div.id = `course-option-${index}`;
+    
+    div.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+            <h4 class="font-semibold text-gray-900">Course Option ${index + 1}</h4>
+            <button onclick="removeCourseOption(${index})" class="text-red-600 hover:text-red-800 p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                <input type="text" value="${courseData.country || ''}" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm cursor-not-allowed">
+                <input type="hidden" name="course_options[${index}][country]" value="${courseData.country || ''}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <input type="text" value="${courseData.city || ''}" name="course_options[${index}][city]" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">College</label>
+                <input type="text" value="${courseData.college || ''}" name="course_options[${index}][college]" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Course</label>
+                <input type="text" value="${courseData.course || ''}" name="course_options[${index}][course]" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Course Type</label>
+                <input type="text" value="${courseData.course_type || ''}" name="course_options[${index}][course_type]" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Fees</label>
+                <input type="text" value="${courseData.fees || ''}" name="course_options[${index}][fees]" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+                <input type="text" value="${courseData.duration || ''}" name="course_options[${index}][duration]" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+            </div>
+            <div>
+                <input type="hidden" name="course_options[${index}][college_detail_id]" value="${courseData.college_detail_id || ''}">
+            </div>
+        </div>
+    `;
+    
+    return div;
+}
+
+function addNewCourseOption() {
+    if (selectedCoursesData.length === 0) {
+        showAlert('Please add at least one course option first', 'error');
+        return;
+    }
+    
+    const baseCountry = selectedCoursesData[0].country;
+    const newCourse = {
+        country: baseCountry,
+        city: '',
+        college: '',
+        course: '',
+        course_type: '',
+        fees: '',
+        duration: '',
+        college_detail_id: ''
+    };
+    
+    selectedCoursesData.push(newCourse);
+    displaySelectedCourses();
+    updateCourseCount();
+    
+    showAlert('New course option added', 'success');
+}
+
+function removeCourseOption(index) {
+    if (selectedCoursesData.length <= 1) {
+        showAlert('At least one course option is required', 'error');
+        return;
+    }
+    
+    selectedCoursesData.splice(index, 1);
+    displaySelectedCourses();
+    updateCourseCount();
+    
+    showAlert('Course option removed', 'info');
+}
+
+function updateCourseCount() {
+    const countSpan = document.getElementById('selectedCourseCount');
+    if (countSpan) {
+        countSpan.textContent = selectedCoursesData.length;
+    }
+}
+
+function hideMultipleCourseBanner() {
+    const banner = document.getElementById('multipleCourseBanner');
+    if (banner) {
+        banner.classList.add('hidden');
     }
 }
 </script>

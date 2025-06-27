@@ -115,6 +115,75 @@
                 </div>
             </div>
 
+            <!-- Course Options -->
+            @if($application->courseOptions && $application->courseOptions->count() > 0)
+            <div class="glass-effect rounded-2xl shadow-xl border border-white/20 p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    Course Options
+                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        {{ $application->courseOptions->count() }} Option{{ $application->courseOptions->count() > 1 ? 's' : '' }}
+                    </span>
+                </h2>
+                <div class="space-y-4">
+                    @foreach($application->courseOptions->sortBy('priority_order') as $courseOption)
+                    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4 {{ $courseOption->is_primary ? 'ring-2 ring-indigo-400' : '' }}">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-semibold text-gray-900 flex items-center">
+                                @if($courseOption->is_primary)
+                                    <svg class="w-5 h-5 text-indigo-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Primary Choice
+                                @else
+                                    Option {{ $courseOption->priority_order }}
+                                @endif
+                            </h3>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Country</label>
+                                <p class="text-gray-900">{{ $courseOption->country }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">City/Province</label>
+                                <p class="text-gray-900">{{ $courseOption->city ?: 'Not specified' }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">College/Institution</label>
+                                <p class="text-gray-900">{{ $courseOption->college ?: 'Not specified' }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Course/Program</label>
+                                <p class="text-gray-900">{{ $courseOption->course ?: 'Not specified' }}</p>
+                            </div>
+                            @if($courseOption->course_type)
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Course Type</label>
+                                <p class="text-gray-900">{{ $courseOption->course_type }}</p>
+                            </div>
+                            @endif
+                            @if($courseOption->fees)
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Fees</label>
+                                <p class="text-gray-900">{{ $courseOption->fees }}</p>
+                            </div>
+                            @endif
+                            @if($courseOption->duration)
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Duration</label>
+                                <p class="text-gray-900">{{ $courseOption->duration }}</p>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             <!-- Educational Qualifications -->
             <div class="glass-effect rounded-2xl shadow-xl border border-white/20 p-6">
                 <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">

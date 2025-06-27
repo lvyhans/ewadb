@@ -10,12 +10,38 @@
                     <h1 class="text-3xl font-bold text-gray-900">Add New Lead</h1>
                     <p class="text-gray-600 mt-2">Create a new lead to track potential visa applicants</p>
                 </div>
-                <a href="{{ route('leads.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                <div class="flex items-center space-x-3">
+                    <a href="{{ route('courses.finder') }}" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        Course Finder
+                    </a>
+                    <a href="{{ route('leads.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Leads
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Course Finder Auto-fill Banner (initially hidden) -->
+        <div id="courseFinderBanner" class="hidden mb-6 bg-gradient-to-r from-purple-100 to-blue-100 border border-purple-200 rounded-xl p-4">
+            <div class="flex items-center">
+                <svg class="w-6 h-6 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <h4 class="font-semibold text-purple-800">Course Details Auto-filled</h4>
+                    <p class="text-purple-700 text-sm">The highlighted fields have been automatically filled from your course selection. You can modify them if needed.</p>
+                </div>
+                <button onclick="hideCourseFinderBanner()" class="ml-auto text-purple-600 hover:text-purple-800">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
-                    Back to Leads
-                </a>
+                </button>
             </div>
         </div>
 
@@ -453,6 +479,12 @@ console.log('Employment count initialized:', employmentCount);
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Form JavaScript initialized');
     console.log('Current employment count:', employmentCount);
+    
+    // Check if coming from course finder and auto-fill form
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('from') === 'course-finder') {
+        autoFillFromCourseSelection();
+    }
     
     // Show reference name field when source is Reference
     const leadSource = document.getElementById('lead_source');
@@ -943,6 +975,76 @@ function closeAlert(alertId) {
         setTimeout(() => {
             alert.remove();
         }, 300);
+    }
+}
+
+// Auto-fill form from course selection
+function autoFillFromCourseSelection() {
+    try {
+        const selectedCourse = localStorage.getItem('selectedCourse');
+        if (selectedCourse) {
+            const courseData = JSON.parse(selectedCourse);
+            console.log('Auto-filling form with course data:', courseData);
+            
+            // Show the banner
+            const banner = document.getElementById('courseFinderBanner');
+            if (banner) {
+                banner.classList.remove('hidden');
+            }
+            
+            // Fill the form fields
+            if (courseData.country) {
+                const countryField = document.getElementById('country');
+                if (countryField) {
+                    countryField.value = courseData.country;
+                    countryField.classList.add('bg-yellow-50', 'border-yellow-300');
+                }
+            }
+            
+            if (courseData.city) {
+                const cityField = document.getElementById('state');
+                if (cityField) {
+                    cityField.value = courseData.city;
+                    cityField.classList.add('bg-yellow-50', 'border-yellow-300');
+                }
+            }
+            
+            if (courseData.college) {
+                const collegeField = document.getElementById('college');
+                if (collegeField) {
+                    collegeField.value = courseData.college;
+                    collegeField.classList.add('bg-yellow-50', 'border-yellow-300');
+                }
+            }
+            
+            if (courseData.course) {
+                const courseField = document.querySelector('input[name="course"]');
+                if (courseField) {
+                    courseField.value = courseData.course;
+                    courseField.classList.add('bg-yellow-50', 'border-yellow-300');
+                }
+            }
+            
+            // Show success message
+            showAlert('Course details have been auto-filled from Course Finder!', 'success');
+            
+            // Clear the stored course data
+            localStorage.removeItem('selectedCourse');
+            
+            // Scroll to the top of the form to show the filled fields
+            document.querySelector('.max-w-6xl').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    } catch (error) {
+        console.error('Error auto-filling course data:', error);
+        localStorage.removeItem('selectedCourse'); // Clean up on error
+    }
+}
+
+// Hide course finder banner
+function hideCourseFinderBanner() {
+    const banner = document.getElementById('courseFinderBanner');
+    if (banner) {
+        banner.classList.add('hidden');
     }
 }
 </script>

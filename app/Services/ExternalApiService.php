@@ -575,4 +575,392 @@ class ExternalApiService
             ];
         }
     }
+
+    /**
+     * Get countries from external API
+     */
+    public function getCountries(): array
+    {
+        try {
+            $apiUrl = config('services.external_api.countries_url');
+            
+            if (!$apiUrl) {
+                Log::warning('External API countries URL not configured, returning test data');
+                return $this->getTestCountries();
+            }
+
+            Log::info('Fetching countries from external API', ['url' => $apiUrl]);
+
+            $response = Http::timeout(30)->get($apiUrl);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                Log::info('Countries fetched successfully', ['count' => count($data)]);
+                return $data;
+            } else {
+                Log::warning('Failed to fetch countries from external API, returning test data', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+                return $this->getTestCountries();
+            }
+        } catch (\Exception $e) {
+            Log::warning('Error fetching countries from external API, returning test data', [
+                'error' => $e->getMessage()
+            ]);
+            return $this->getTestCountries();
+        }
+    }
+
+    /**
+     * Get test countries data
+     */
+    private function getTestCountries(): array
+    {
+        return [
+            ['country_name' => 'Canada'],
+            ['country_name' => 'Australia'],
+            ['country_name' => 'United Kingdom'],
+            ['country_name' => 'United States'],
+            ['country_name' => 'Germany'],
+            ['country_name' => 'France'],
+            ['country_name' => 'New Zealand'],
+        ];
+    }
+
+    /**
+     * Get cities by country from external API
+     */
+    public function getCitiesByCountry(string $country): array
+    {
+        try {
+            $apiUrl = config('services.external_api.cities_url');
+            
+            if (!$apiUrl) {
+                Log::warning('External API cities URL not configured, returning test data');
+                return $this->getTestCities($country);
+            }
+
+            Log::info('Fetching cities from external API', ['url' => $apiUrl, 'country' => $country]);
+
+            $response = Http::timeout(30)->get($apiUrl, ['country' => $country]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                Log::info('Cities fetched successfully', ['count' => count($data), 'country' => $country]);
+                return $data;
+            } else {
+                Log::warning('Failed to fetch cities from external API, returning test data', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'country' => $country
+                ]);
+                return $this->getTestCities($country);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Error fetching cities from external API, returning test data', [
+                'error' => $e->getMessage(),
+                'country' => $country
+            ]);
+            return $this->getTestCities($country);
+        }
+    }
+
+    /**
+     * Get test cities data
+     */
+    private function getTestCities(string $country): array
+    {
+        $testCities = [
+            'Canada' => [
+                ['city_name' => 'Toronto'],
+                ['city_name' => 'Vancouver'],
+                ['city_name' => 'Montreal'],
+                ['city_name' => 'Calgary'],
+                ['city_name' => 'Ottawa'],
+            ],
+            'Australia' => [
+                ['city_name' => 'Sydney'],
+                ['city_name' => 'Melbourne'],
+                ['city_name' => 'Brisbane'],
+                ['city_name' => 'Perth'],
+                ['city_name' => 'Adelaide'],
+            ],
+            'United Kingdom' => [
+                ['city_name' => 'London'],
+                ['city_name' => 'Manchester'],
+                ['city_name' => 'Birmingham'],
+                ['city_name' => 'Edinburgh'],
+                ['city_name' => 'Glasgow'],
+            ]
+        ];
+
+        return $testCities[$country] ?? [['city_name' => 'Default City']];
+    }
+
+    /**
+     * Get colleges by country and city from external API
+     */
+    public function getCollegesByCountryAndCity(string $country, string $city): array
+    {
+        try {
+            $apiUrl = config('services.external_api.colleges_url');
+            
+            if (!$apiUrl) {
+                Log::warning('External API colleges URL not configured, returning test data');
+                return $this->getTestColleges($country, $city);
+            }
+
+            Log::info('Fetching colleges from external API', ['url' => $apiUrl, 'country' => $country, 'city' => $city]);
+
+            $response = Http::timeout(30)->get($apiUrl, [
+                'country' => $country,
+                'city' => $city
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                Log::info('Colleges fetched successfully', ['count' => count($data), 'country' => $country, 'city' => $city]);
+                return $data;
+            } else {
+                Log::warning('Failed to fetch colleges from external API, returning test data', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'country' => $country,
+                    'city' => $city
+                ]);
+                return $this->getTestColleges($country, $city);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Error fetching colleges from external API, returning test data', [
+                'error' => $e->getMessage(),
+                'country' => $country,
+                'city' => $city
+            ]);
+            return $this->getTestColleges($country, $city);
+        }
+    }
+
+    /**
+     * Get test colleges data
+     */
+    private function getTestColleges(string $country, string $city): array
+    {
+        $testColleges = [
+            'Canada' => [
+                'Toronto' => [
+                    ['college_name' => 'University of Toronto'],
+                    ['college_name' => 'Ryerson University'],
+                    ['college_name' => 'York University'],
+                ],
+                'Vancouver' => [
+                    ['college_name' => 'University of British Columbia'],
+                    ['college_name' => 'Simon Fraser University'],
+                    ['college_name' => 'British Columbia Institute of Technology'],
+                ]
+            ],
+            'Australia' => [
+                'Sydney' => [
+                    ['college_name' => 'University of Sydney'],
+                    ['college_name' => 'University of New South Wales'],
+                    ['college_name' => 'Macquarie University'],
+                ],
+                'Melbourne' => [
+                    ['college_name' => 'University of Melbourne'],
+                    ['college_name' => 'Monash University'],
+                    ['college_name' => 'RMIT University'],
+                ]
+            ]
+        ];
+
+        return $testColleges[$country][$city] ?? [['college_name' => 'Default College']];
+    }
+
+    /**
+     * Get courses by country, city and college from external API
+     */
+    public function getCoursesByCountryCityCollege(string $country, string $city, string $college): array
+    {
+        try {
+            $apiUrl = config('services.external_api.courses_url');
+            
+            if (!$apiUrl) {
+                Log::warning('External API courses URL not configured, returning test data');
+                return $this->getTestCourses($country, $city, $college);
+            }
+
+            Log::info('Fetching courses from external API', [
+                'url' => $apiUrl, 
+                'country' => $country, 
+                'city' => $city, 
+                'college' => $college
+            ]);
+
+            $response = Http::timeout(30)->get($apiUrl, [
+                'country' => $country,
+                'city' => $city,
+                'college' => $college
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                Log::info('Courses fetched successfully', [
+                    'count' => count($data), 
+                    'country' => $country, 
+                    'city' => $city, 
+                    'college' => $college
+                ]);
+                return $data;
+            } else {
+                Log::warning('Failed to fetch courses from external API, returning test data', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'country' => $country,
+                    'city' => $city,
+                    'college' => $college
+                ]);
+                return $this->getTestCourses($country, $city, $college);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Error fetching courses from external API, returning test data', [
+                'error' => $e->getMessage(),
+                'country' => $country,
+                'city' => $city,
+                'college' => $college
+            ]);
+            return $this->getTestCourses($country, $city, $college);
+        }
+    }
+
+    /**
+     * Get test courses data
+     */
+    private function getTestCourses(string $country, string $city, string $college): array
+    {
+        $testCourses = [
+            'Canada' => [
+                'Toronto' => [
+                    'University of Toronto' => [
+                        ['course_name' => 'Computer Science'],
+                        ['course_name' => 'Engineering'],
+                        ['course_name' => 'Business Administration'],
+                        ['course_name' => 'Medicine'],
+                        ['course_name' => 'Law'],
+                    ],
+                    'Ryerson University' => [
+                        ['course_name' => 'Information Technology Management'],
+                        ['course_name' => 'Business Management'],
+                        ['course_name' => 'Graphic Communications Management'],
+                        ['course_name' => 'Architecture'],
+                    ],
+                    'York University' => [
+                        ['course_name' => 'Liberal Arts & Professional Studies'],
+                        ['course_name' => 'Science'],
+                        ['course_name' => 'Fine Arts'],
+                        ['course_name' => 'Education'],
+                    ]
+                ],
+                'Vancouver' => [
+                    'University of British Columbia' => [
+                        ['course_name' => 'Applied Science'],
+                        ['course_name' => 'Arts'],
+                        ['course_name' => 'Commerce'],
+                        ['course_name' => 'Science'],
+                        ['course_name' => 'Forestry'],
+                    ],
+                    'Simon Fraser University' => [
+                        ['course_name' => 'Computing Science'],
+                        ['course_name' => 'Business Administration'],
+                        ['course_name' => 'Engineering Science'],
+                        ['course_name' => 'Communication, Art and Technology'],
+                    ],
+                    'British Columbia Institute of Technology' => [
+                        ['course_name' => 'Technology'],
+                        ['course_name' => 'Applied & Natural Sciences'],
+                        ['course_name' => 'Business & Media'],
+                        ['course_name' => 'Health Sciences'],
+                    ]
+                ]
+            ],
+            'Australia' => [
+                'Sydney' => [
+                    'University of Sydney' => [
+                        ['course_name' => 'Medicine and Health'],
+                        ['course_name' => 'Engineering and Information Technologies'],
+                        ['course_name' => 'Business'],
+                        ['course_name' => 'Arts and Social Sciences'],
+                        ['course_name' => 'Science'],
+                    ],
+                    'University of New South Wales' => [
+                        ['course_name' => 'Engineering'],
+                        ['course_name' => 'Business School'],
+                        ['course_name' => 'Medicine'],
+                        ['course_name' => 'Science'],
+                        ['course_name' => 'Built Environment'],
+                    ],
+                    'Macquarie University' => [
+                        ['course_name' => 'Business and Economics'],
+                        ['course_name' => 'Science and Engineering'],
+                        ['course_name' => 'Arts'],
+                        ['course_name' => 'Human Sciences'],
+                    ]
+                ],
+                'Melbourne' => [
+                    'University of Melbourne' => [
+                        ['course_name' => 'Architecture, Building and Planning'],
+                        ['course_name' => 'Arts'],
+                        ['course_name' => 'Business and Economics'],
+                        ['course_name' => 'Education'],
+                        ['course_name' => 'Engineering'],
+                        ['course_name' => 'Medicine, Dentistry and Health Sciences'],
+                    ],
+                    'Monash University' => [
+                        ['course_name' => 'Art, Design & Architecture'],
+                        ['course_name' => 'Arts'],
+                        ['course_name' => 'Business and Economics'],
+                        ['course_name' => 'Education'],
+                        ['course_name' => 'Engineering'],
+                        ['course_name' => 'Information Technology'],
+                    ],
+                    'RMIT University' => [
+                        ['course_name' => 'Business'],
+                        ['course_name' => 'Design and Social Context'],
+                        ['course_name' => 'Science, Engineering and Health'],
+                        ['course_name' => 'Media and Communication'],
+                    ]
+                ]
+            ],
+            'United Kingdom' => [
+                'London' => [
+                    'University College London' => [
+                        ['course_name' => 'Arts & Humanities'],
+                        ['course_name' => 'Brain Sciences'],
+                        ['course_name' => 'Engineering Sciences'],
+                        ['course_name' => 'Laws'],
+                        ['course_name' => 'Life Sciences'],
+                        ['course_name' => 'Mathematical & Physical Sciences'],
+                        ['course_name' => 'Medical Sciences'],
+                    ],
+                    'King\'s College London' => [
+                        ['course_name' => 'Arts & Humanities'],
+                        ['course_name' => 'Business'],
+                        ['course_name' => 'Dentistry, Oral & Craniofacial Sciences'],
+                        ['course_name' => 'Life Sciences & Medicine'],
+                        ['course_name' => 'Natural & Mathematical Sciences'],
+                        ['course_name' => 'Nursing, Midwifery & Palliative Care'],
+                        ['course_name' => 'Psychiatry, Psychology & Neuroscience'],
+                        ['course_name' => 'Social Science & Public Policy'],
+                    ],
+                    'Imperial College London' => [
+                        ['course_name' => 'Engineering'],
+                        ['course_name' => 'Medicine'],
+                        ['course_name' => 'Natural Sciences'],
+                        ['course_name' => 'Business School'],
+                    ]
+                ]
+            ]
+        ];
+
+        return $testCourses[$country][$city][$college] ?? [['course_name' => 'Default Course']];
+    }
 }

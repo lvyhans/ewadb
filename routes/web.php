@@ -10,6 +10,7 @@ use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\FollowupController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\CourseFinderController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -115,6 +116,14 @@ Route::middleware('auth')->group(function () {
         
         Route::get('/{id}', [ApplicationController::class, 'show'])->name('show');
         Route::delete('/{id}', [ApplicationController::class, 'destroy'])->name('destroy');
+    });
+    
+    // Course Finder Routes
+    Route::prefix('courses')->name('courses.')->group(function () {
+        Route::get('/finder', [CourseFinderController::class, 'index'])->name('finder');
+        Route::post('/search', [CourseFinderController::class, 'search'])->name('search');
+        Route::get('/filters', [CourseFinderController::class, 'getFilters'])->name('filters');
+        Route::get('/details/{courseId}', [CourseFinderController::class, 'getCourseDetails'])->name('details');
     });
     
     // Followup Management Routes
