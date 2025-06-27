@@ -12,23 +12,85 @@ class FollowupController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * Redirects to dashboard instead.
      */
     public function index()
     {
-        $followups = LeadFollowup::with(['lead', 'user'])
-            ->orderBy('scheduled_at', 'desc')
-            ->paginate(20);
-            
-        return view('followups.index', compact('followups'));
+        return redirect()->route('followups.dashboard');
+    }
+
+    /**
+     * Display the followup dashboard.
+     */
+    public function dashboard()
+    {
+        $today = Carbon::today();
+        $startOfWeek = Carbon::now()->startOfWeek();
+        $endOfWeek = Carbon::now()->endOfWeek();
+
+        // Get stats
+        $stats = [
+            'today' => LeadFollowup::whereDate('scheduled_at', $today)
+                                  ->where('status', 'pending')
+                                  ->count(),
+            'this_week' => LeadFollowup::whereBetween('scheduled_at', [$startOfWeek, $endOfWeek])
+                                      ->where('status', 'pending')
+                                      ->count(),
+            'overdue' => LeadFollowup::where('scheduled_at', '<', $today)
+                                    ->where('status', 'pending')
+                                    ->count(),
+            'completed' => LeadFollowup::where('status', 'completed')
+                                      ->whereDate('completed_at', $today)
+                                      ->count(),
+        ];
+
+        // Get today's followups
+        $todaysFollowups = LeadFollowup::with(['lead', 'user'])
+                                      ->whereDate('scheduled_at', $today)
+                                      ->where('status', 'pending')
+                                      ->orderBy('scheduled_at', 'asc')
+                                      ->get();
+
+        // Get overdue followups
+        $overdueFollowups = LeadFollowup::with(['lead', 'user'])
+                                       ->where('scheduled_at', '<', $today)
+                                       ->where('status', 'pending')
+                                       ->orderBy('scheduled_at', 'asc')
+                                       ->take(10)
+                                       ->get();
+
+        // Get upcoming this week (excluding today)
+        $upcomingFollowups = LeadFollowup::with(['lead', 'user'])
+                                        ->whereBetween('scheduled_at', [$today->copy()->addDay(), $endOfWeek])
+                                        ->where('status', 'pending')
+                                        ->orderBy('scheduled_at', 'asc')
+                                        ->take(10)
+                                        ->get();
+
+        // Get recently completed
+        $recentCompleted = LeadFollowup::with(['lead', 'user'])
+                                      ->where('status', 'completed')
+                                      ->whereDate('completed_at', '>=', $today->copy()->subDays(7))
+                                      ->orderBy('completed_at', 'desc')
+                                      ->take(10)
+                                      ->get();
+
+        return view('followups.dashboard', compact(
+            'stats',
+            'todaysFollowups',
+            'overdueFollowups',
+            'upcomingFollowups',
+            'recentCompleted'
+        ));
     }
 
     /**
      * Show the form for creating a new resource.
+     * Redirects to dashboard instead - follow-ups are created from lead pages.
      */
     public function create()
     {
-        $leads = Lead::select('id', 'name', 'ref_no')->get();
-        return view('followups.create', compact('leads'));
+        return redirect()->route('followups.dashboard');
     }
 
     /**
@@ -208,5 +270,79 @@ class FollowupController extends Controller
                 'message' => 'Error completing follow-up: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Reschedule a followup
+     */
+    public function reschedule(Request $request, string $id)
+    {
+        try {
+            $followup = LeadFollowup::findOrFail($id);
+            
+            $validator = Validator::make($request->all(), [
+                'scheduled_date' => 'required|date|after_or_equal:today',
+                'scheduled_time' => 'required'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Combine date and time
+            $scheduledAt = Carbon::parse($request->scheduled_date . ' ' . $request->scheduled_time);
+
+            $followup->update([
+                'scheduled_at' => $scheduledAt
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Follow-up rescheduled successfully',
+                'followup' => $followup->load('lead', 'user')
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error rescheduling follow-up: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display today's followups page
+     */
+    public function todaysFollowups()
+    {
+        $today = Carbon::today();
+        
+        $todaysFollowups = LeadFollowup::with(['lead', 'user'])
+                                      ->whereDate('scheduled_at', $today)
+                                      ->where('status', 'pending')
+                                      ->orderBy('scheduled_at', 'asc')
+                                      ->paginate(15);
+
+        return view('followups.today', compact('todaysFollowups'));
+    }
+
+    /**
+     * Display overdue followups page
+     */
+    public function overdueFollowups()
+    {
+        $today = Carbon::today();
+        
+        $overdueFollowups = LeadFollowup::with(['lead', 'user'])
+                                       ->where('scheduled_at', '<', $today)
+                                       ->where('status', 'pending')
+                                       ->orderBy('scheduled_at', 'asc')
+                                       ->paginate(15);
+
+        return view('followups.overdue', compact('overdueFollowups'));
     }
 }

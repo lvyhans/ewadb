@@ -108,6 +108,11 @@ Route::middleware('auth')->group(function () {
     });
     
     // Followup Management Routes
+    Route::get('/followups/dashboard', [\App\Http\Controllers\FollowupController::class, 'dashboard'])->name('followups.dashboard');
+    Route::get('/followups/today', [\App\Http\Controllers\FollowupController::class, 'todaysFollowups'])->name('followups.today');
+    Route::get('/followups/overdue', [\App\Http\Controllers\FollowupController::class, 'overdueFollowups'])->name('followups.overdue');
+    Route::patch('/followups/{followup}/complete', [\App\Http\Controllers\FollowupController::class, 'complete'])->name('followups.complete');
+    Route::patch('/followups/{followup}/reschedule', [\App\Http\Controllers\FollowupController::class, 'reschedule'])->name('followups.reschedule');
     Route::resource('followups', \App\Http\Controllers\FollowupController::class);
 });
 

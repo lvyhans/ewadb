@@ -296,13 +296,44 @@
                                class="block px-4 py-2 text-sm text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all duration-200 {{ request()->routeIs('leads.create') ? 'bg-white/10 text-white' : '' }}">
                                 Add New Lead
                             </a>
-                            <a href="#" onclick="loadTodaysFollowups()" 
-                               class="block px-4 py-2 text-sm text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all duration-200">
-                                Today's Follow-ups
+                        </div>
+                    </div>
+                    
+                    <!-- Follow-up Management -->
+                    <div x-data="{ open: {{ request()->routeIs('followups.*') ? 'true' : 'false' }} }">
+                        <button @click="open = !open" 
+                                class="nav-item w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-white/80 rounded-xl hover:bg-white/10 hover:text-white transition-all duration-200 group {{ request()->routeIs('followups.*') ? 'bg-white/20 text-white shadow-lg' : '' }}">
+                            <div class="flex items-center">
+                                <div class="w-5 h-5 mr-3 transition-transform duration-200 group-hover:scale-110">
+                                    <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <span>Follow-ups</span>
+                            </div>
+                            <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div x-show="open" 
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 transform -translate-y-2"
+                             x-transition:enter-end="opacity-100 transform translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 transform translate-y-0"
+                             x-transition:leave-end="opacity-0 transform -translate-y-2"
+                             class="ml-8 mt-2 space-y-1">
+                            <a href="{{ route('followups.dashboard') }}" 
+                               class="block px-4 py-2 text-sm text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all duration-200 {{ request()->routeIs('followups.dashboard') ? 'bg-white/10 text-white' : '' }}">
+                                <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
                             </a>
-                            <a href="#" onclick="loadOverdueFollowups()" 
-                               class="block px-4 py-2 text-sm text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all duration-200">
-                                Overdue Follow-ups
+                            <a href="{{ route('followups.today') }}" 
+                               class="block px-4 py-2 text-sm text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all duration-200 {{ request()->routeIs('followups.today') ? 'bg-white/10 text-white' : '' }}">
+                                <i class="fas fa-calendar-day mr-2"></i> Today's Follow-ups
+                            </a>
+                            <a href="{{ route('followups.overdue') }}" 
+                               class="block px-4 py-2 text-sm text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all duration-200 {{ request()->routeIs('followups.overdue') ? 'bg-white/10 text-white' : '' }}">
+                                <i class="fas fa-exclamation-triangle mr-2"></i> Overdue Follow-ups
                             </a>
                         </div>
                     </div>
@@ -531,13 +562,12 @@
     @stack('scripts')
     
     <script>
-        // Lead Management Functions
-        function loadTodaysFollowups() {
-            window.location.href = "{{ route('leads.index') }}?filter=today_followups";
+        // Lead Management Functions        function loadTodaysFollowups() {
+            window.location.href = "{{ route('followups.today') }}";
         }
-        
+
         function loadOverdueFollowups() {
-            window.location.href = "{{ route('leads.index') }}?filter=overdue_followups";
+            window.location.href = "{{ route('followups.overdue') }}";
         }
     </script>
 </body>

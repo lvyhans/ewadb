@@ -170,6 +170,73 @@
         </div>
     </div>
 
+    <!-- Follow-up Quick Access -->
+    <div class="mb-8">
+        <div class="glass-effect rounded-2xl border border-white/20 p-6 hover-lift">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900">Follow-up Management</h3>
+                    <p class="text-gray-600">Quick access to your follow-up activities</p>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <a href="{{ route('followups.dashboard') }}" 
+                   class="bg-white/50 rounded-xl p-4 hover:bg-white/70 transition-all duration-200 group border border-white/20">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">Dashboard</span>
+                    </div>
+                </a>
+                
+                <a href="{{ route('followups.today') }}" 
+                   class="bg-white/50 rounded-xl p-4 hover:bg-white/70 transition-all duration-200 group border border-white/20">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">Today's</span>
+                    </div>
+                </a>
+                
+                <a href="{{ route('followups.overdue') }}" 
+                   class="bg-white/50 rounded-xl p-4 hover:bg-white/70 transition-all duration-200 group border border-white/20">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">Overdue</span>
+                    </div>
+                </a>
+                
+                <a href="{{ route('leads.index') }}" 
+                   class="bg-white/50 rounded-xl p-4 hover:bg-white/70 transition-all duration-200 group border border-white/20">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">Add New</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         

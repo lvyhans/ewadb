@@ -51,7 +51,7 @@ class LeadFollowup extends Model
      */
     public function scopePending($query)
     {
-        return $query->where('status', 'scheduled');
+        return $query->where('status', 'pending');
     }
 
     /**
@@ -76,6 +76,6 @@ class LeadFollowup extends Model
     public function scopeOverdue($query)
     {
         return $query->where('scheduled_at', '<', now())
-                    ->where('status', 'scheduled');
+                    ->where('status', 'pending');
     }
 }
