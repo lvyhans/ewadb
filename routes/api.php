@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserApprovalController;
+use App\Http\Controllers\LeadController;
+use App\Http\Controllers\LeadFollowupController;
+use App\Http\Controllers\ApplicationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -81,6 +84,42 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Get hierarchy statistics
         Route::get('/stats', [\App\Http\Controllers\Api\AdminHierarchyController::class, 'getHierarchyStats']);
+    });
+
+    // Lead Management API Routes
+    Route::prefix('leads')->group(function () {
+        // Lead CRUD operations
+        Route::get('/', [LeadController::class, 'index']);
+        Route::post('/', [LeadController::class, 'store']);
+        Route::get('/{id}', [LeadController::class, 'show']);
+        Route::put('/{id}', [LeadController::class, 'update']);
+        Route::delete('/{id}', [LeadController::class, 'destroy']);
+        
+        // Lead statistics
+        Route::get('/stats/dashboard', [LeadController::class, 'statistics']);
+        
+        // Lead followups
+        Route::get('/{leadId}/followups', [LeadFollowupController::class, 'index']);
+        Route::post('/{leadId}/followups', [LeadFollowupController::class, 'store']);
+        Route::put('/{leadId}/followups/{followupId}/complete', [LeadFollowupController::class, 'complete']);
+        Route::put('/{leadId}/followups/{followupId}/cancel', [LeadFollowupController::class, 'cancel']);
+    });
+    
+    // Followup Management Routes
+    Route::prefix('followups')->group(function () {
+        Route::get('/my-followups', [LeadFollowupController::class, 'myFollowups']);
+        Route::get('/today', [LeadFollowupController::class, 'todaysFollowups']);
+        Route::get('/overdue', [LeadFollowupController::class, 'overdueFollowups']);
+        
+        // Individual followup management
+        Route::get('/{id}', [\App\Http\Controllers\Api\FollowupApiController::class, 'show']);
+        Route::post('/{id}', [\App\Http\Controllers\Api\FollowupApiController::class, 'update']);
+        Route::post('/{id}/complete', [\App\Http\Controllers\Api\FollowupApiController::class, 'complete']);
+    });
+
+    // Application API routes
+    Route::prefix('applications')->group(function () {
+        Route::post('/get-lead-data', [ApplicationController::class, 'getLeadData']);
     });
 });
 

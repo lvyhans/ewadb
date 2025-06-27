@@ -7,23 +7,77 @@
         <div class="mb-8">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Add New Lead</h1>
-                    <p class="text-gray-600 mt-2">Create a new lead to track potential visa applicants</p>
+                    <h1 class="text-3xl font-bold text-gray-900">Apply Application</h1>
+                    <p class="text-gray-600 mt-2">Submit a new visa application form</p>
                 </div>
-                <a href="{{ route('leads.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors">
+                <a href="{{ route('applications.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
-                    Back to Leads
+                    Back to Applications
                 </a>
+            </div>
+        </div>
+
+        <!-- Auto-fill Card -->
+        <div class="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden mb-8">
+            <div class="p-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                    <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    Auto-fill from Lead
+                </h3>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <p class="text-blue-800 text-sm flex items-start">
+                        <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>If you have a lead reference number, enter it below to automatically fill the form with existing lead data.</span>
+                    </p>
+                </div>
+                
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <input type="text" id="leadRefNumber" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Enter lead reference number (e.g., LD001)">
+                    </div>
+                    <button type="button" onclick="fetchLeadData()" class="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors font-medium">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Auto-Fill
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- Main Form Card -->
         <div class="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
             <div class="p-8">
-                    <form id="lead_form" action="{{ route('leads.store') }}" method="POST">
+                    <form id="lead_form" action="{{ route('applications.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
+                        
+                        <!-- Error Messages -->
+                        @if ($errors->any())
+                            <div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+                                <div class="flex items-start">
+                                    <svg class="w-5 h-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <div>
+                                        <h4 class="text-red-800 font-medium">Please correct the following errors:</h4>
+                                        <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                                            @foreach ($errors->all() as $error)
+                                                <li>{{ $error }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                         
                 <!-- Country & College Selection -->
                 <div class="mb-8">
@@ -402,10 +456,39 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Document Checklist -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                        <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">8</div>
+                        Document Checklist
+                    </h3>
+                    
+                    <div id="documentChecklistContainer" class="space-y-4">
+                        <div id="documentChecklistLoading" class="hidden">
+                            <div class="flex items-center justify-center py-8">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <span class="ml-3 text-gray-600">Loading document requirements...</span>
+                            </div>
+                        </div>
+                        
+                        <div id="documentChecklistEmpty" class="text-center py-8 text-gray-500">
+                            <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <p>Select a country and qualification to view document requirements</p>
+                        </div>
+                        
+                        <div id="documentChecklistContent" class="hidden space-y-4">
+                            <!-- Documents will be loaded here dynamically -->
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Remarks -->
                 <div class="mb-8">
                     <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-                        <div class="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">8</div>
+                        <div class="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">9</div>
                         Additional Information
                     </h3>
                     
@@ -429,7 +512,7 @@
                         <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                         </svg>
-                        Save Lead
+                        Save Application
                     </button>
                 </div>
 
@@ -543,10 +626,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
                     <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" class="opacity-75"></path>
                 </svg>
-                Saving Lead...
+                Saving Application...
             `;
             
-            fetch('{{ route("leads.store") }}', {
+            fetch('{{ route("applications.store") }}', {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -561,9 +644,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (contentType && contentType.includes('application/json')) {
                         return response.json().then(data => {
                             if (data.success) {
-                                showAlert('Lead created successfully!', 'success');
+                                showAlert('Application created successfully!', 'success');
                                 setTimeout(() => {
-                                    window.location.href = '{{ route("leads.index") }}';
+                                    window.location.href = '{{ route("applications.index") }}';
                                 }, 1500);
                             } else {
                                 throw new Error(data.message || 'An error occurred');
@@ -571,9 +654,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     } else {
                         // Redirect response - success
-                        showAlert('Lead created successfully!', 'success');
+                        showAlert('Application created successfully!', 'success');
                         setTimeout(() => {
-                            window.location.href = '{{ route("leads.index") }}';
+                            window.location.href = '{{ route("applications.index") }}';
                         }, 1500);
                     }
                 } else {
@@ -584,7 +667,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error:', error);
-                showAlert('Error creating lead: ' + error.message, 'error');
+                showAlert('Error creating application: ' + error.message, 'error');
             })
             .finally(() => {
                 // Reset button state
@@ -943,6 +1026,570 @@ function closeAlert(alertId) {
         setTimeout(() => {
             alert.remove();
         }, 300);
+    }
+}
+
+// Auto-fill from lead data function - COMPLETE VERSION
+function fetchLeadData() {
+    const refNumber = document.getElementById('leadRefNumber').value.trim();
+    if (!refNumber) {
+        showAlert('Please enter a lead reference number', 'error');
+        return;
+    }
+    
+    console.log('Fetching lead data for reference:', refNumber);
+    
+    // Show loading state
+    const autoFillBtn = document.querySelector('button[onclick="fetchLeadData()"]');
+    const originalText = autoFillBtn.innerHTML;
+    autoFillBtn.disabled = true;
+    autoFillBtn.innerHTML = `
+        <svg class="animate-spin w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
+            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" class="opacity-75"></path>
+        </svg>
+        Loading...
+    `;
+    
+    fetch(`/applications/get-lead-data?ref_no=${encodeURIComponent(refNumber)}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Lead data received:', data);
+        if (data.success && data.lead) {
+            fillFormWithLeadData(data.lead, data.employment_history || []);
+            showAlert('Form auto-filled successfully from lead data!', 'success');
+        } else {
+            showAlert(data.message || 'Lead not found with this reference number', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching lead data:', error);
+        showAlert('Error fetching lead data: ' + error.message, 'error');
+    })
+    .finally(() => {
+        // Reset button state
+        autoFillBtn.disabled = false;
+        autoFillBtn.innerHTML = originalText;
+    });
+}
+
+function fillFormWithLeadData(leadData, employmentHistory) {
+    console.log('Filling form with lead data:', leadData);
+    console.log('Employment history:', employmentHistory);
+    
+    try {
+        // Basic form fields mapping
+        const fieldMappings = {
+            // Personal Details
+            'name': leadData.name,
+            'dob': leadData.dob,
+            'father': leadData.father,
+            'phone': leadData.phone,
+            'rphone': leadData.rphone,
+            'email': leadData.email,
+            'f_city': leadData.f_city,
+            'address': leadData.address,
+            
+            // Country & College
+            'country': leadData.country,
+            'city': leadData.city,
+            'college': leadData.college,
+            'course': leadData.course,
+            
+            // Background Information
+            'travel_history': leadData.travel_history,
+            'any_refusal': leadData.any_refusal,
+            'spouse_name': leadData.spouse_name,
+            'any_gap': leadData.any_gap,
+            
+            // Educational Qualifications
+            'last_qual': leadData.last_qual,
+            'already_applied': leadData.already_applied,
+            
+            // 10th Grade
+            'tenyear': leadData.tenyear,
+            'tenmarks': leadData.tenmarks,
+            'ten_major': leadData.ten_major,
+            
+            // 12th Grade
+            'twelveyear': leadData.twelveyear,
+            'twelvemarks': leadData.twelvemarks,
+            'twelvemajor': leadData.twelvemajor,
+            
+            // Diploma
+            'ugdiplomayear': leadData.ugdiplomayear,
+            'ugdiplomamarks': leadData.ugdiplomamarks,
+            'ugdiplomamajor': leadData.ugdiplomamajor,
+            
+            // Graduation
+            'byear': leadData.byear,
+            'bmarks': leadData.bmarks,
+            'gra_major': leadData.gra_major,
+            
+            // Post Graduation
+            'pgr_year': leadData.pgr_year,
+            'pgr_per': leadData.pgr_per,
+            'pgr_major': leadData.pgr_major,
+            
+            // Source Information
+            'source': leadData.source,
+            'r_name': leadData.r_name,
+            
+            // Additional Information
+            'remarks': leadData.remarks
+        };
+        
+        // Fill form fields
+        Object.entries(fieldMappings).forEach(([fieldName, value]) => {
+            const field = document.querySelector(`[name="${fieldName}"]`);
+            if (field && value !== null && value !== undefined && value !== '') {
+                field.value = value;
+                console.log(`Filled ${fieldName} with value:`, value);
+                
+                // Trigger change event for fields that need it
+                field.dispatchEvent(new Event('change'));
+            }
+        });
+        
+        // Handle English proficiency scores
+        if (leadData.score_type) {
+            const scoreTypeRadio = document.querySelector(`input[name="score_type"][value="${leadData.score_type}"]`);
+            if (scoreTypeRadio) {
+                scoreTypeRadio.checked = true;
+                scoreTypeRadio.dispatchEvent(new Event('change'));
+                
+                // Fill score fields
+                const scores = {
+                    'overall_score': leadData[leadData.score_type + '_overall'],
+                    'listening_score': leadData[leadData.score_type + '_listening'],
+                    'reading_score': leadData[leadData.score_type + '_reading'],
+                    'writing_score': leadData[leadData.score_type + '_writing'],
+                    'speaking_score': leadData[leadData.score_type + '_speaking']
+                };
+                
+                Object.entries(scores).forEach(([fieldId, value]) => {
+                    const field = document.getElementById(fieldId);
+                    if (field && value) {
+                        field.value = value;
+                        console.log(`Filled ${fieldId} with score:`, value);
+                    }
+                });
+            }
+        }
+        
+        // Handle qualification change
+        if (leadData.last_qual) {
+            const qualSelect = document.getElementById('last_qual');
+            if (qualSelect) {
+                qualSelect.value = leadData.last_qual;
+                qualSelect.dispatchEvent(new Event('change'));
+            }
+        }
+        
+        // Handle source change
+        if (leadData.source) {
+            const sourceSelect = document.getElementById('lead_source');
+            if (sourceSelect) {
+                sourceSelect.value = leadData.source;
+                sourceSelect.dispatchEvent(new Event('change'));
+            }
+        }
+        
+        // Fill employment history
+        if (employmentHistory && employmentHistory.length > 0) {
+            console.log('Processing employment history:', employmentHistory);
+            
+            // Clear existing employment rows except the first one
+            const employmentRows = document.getElementById('employmentRows');
+            if (employmentRows) {
+                const rows = employmentRows.querySelectorAll('.employment-row');
+                for (let i = 1; i < rows.length; i++) {
+                    rows[i].remove();
+                }
+                
+                // Fill employment data
+                employmentHistory.forEach((employment, index) => {
+                    if (index === 0) {
+                        // Fill first row
+                        fillEmploymentRow(0, employment);
+                    } else {
+                        // Add new row with data
+                        addEmploymentRowWithData(employment, index);
+                    }
+                });
+            }
+        }
+        
+        console.log('Form filling completed successfully');
+        
+    } catch (error) {
+        console.error('Error filling form with lead data:', error);
+        showAlert('Error filling form: ' + error.message, 'error');
+    }
+}
+function fillEmploymentRow(index, employment) {
+    console.log(`Filling employment row ${index} with:`, employment);
+    
+    const fields = [
+        { name: `employementhistory[${index}][join_date]`, value: employment.join_date },
+        { name: `employementhistory[${index}][left_date]`, value: employment.left_date },
+        { name: `employementhistory[${index}][company_name]`, value: employment.company_name },
+        { name: `employementhistory[${index}][job_position]`, value: employment.job_position },
+        { name: `employementhistory[${index}][job_city]`, value: employment.job_city }
+    ];
+    
+    fields.forEach(({name, value}) => {
+        const field = document.querySelector(`[name="${name}"]`);
+        if (field && value) {
+            field.value = value;
+            console.log(`Filled ${name} with:`, value);
+        }
+    });
+}
+
+function addEmploymentRowWithData(employment, index) {
+    console.log(`Adding employment row ${index} with data:`, employment);
+    
+    const employmentRows = document.getElementById('employmentRows');
+    if (!employmentRows) {
+        console.error('Employment rows container not found');
+        return;
+    }
+    
+    const newRowHTML = `
+        <div class="employment-row bg-white rounded-xl p-6 shadow-sm border border-gray-100 transform translate-x-full opacity-0 transition-all duration-300" data-index="${index}">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Join Date</label>
+                    <input type="date" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="employementhistory[${index}][join_date]" value="${employment.join_date || ''}">
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">End Date</label>
+                    <input type="date" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="employementhistory[${index}][left_date]" value="${employment.left_date || ''}">
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Company Name</label>
+                    <input type="text" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="employementhistory[${index}][company_name]" placeholder="Company name" value="${employment.company_name || ''}">
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Job Position</label>
+                    <input type="text" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="employementhistory[${index}][job_position]" placeholder="Job title" value="${employment.job_position || ''}">
+                </div>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-4 items-end">
+                <div class="flex-1 space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">City/Country</label>
+                    <input type="text" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="employementhistory[${index}][job_city]" placeholder="Location" value="${employment.job_city || ''}">
+                </div>
+                <div class="flex-shrink-0">
+                    <button type="button" class="remove-employment px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors flex items-center gap-2" title="Remove this work experience">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        <span class="hidden sm:inline">Remove</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    try {
+        employmentRows.insertAdjacentHTML('beforeend', newRowHTML);
+        
+        // Animate the new row in
+        const newRow = employmentRows.lastElementChild;
+        if (newRow) {
+            setTimeout(() => {
+                newRow.classList.remove('translate-x-full', 'opacity-0');
+            }, 10);
+        }
+        
+        console.log(`Employment row ${index} added successfully with data`);
+        
+    } catch (error) {
+        console.error('Error adding employment row with data:', error);
+    }
+}
+
+// Document Checklist Functionality
+function loadDocumentChecklist() {
+    const country = document.querySelector('input[name="country"]')?.value;
+    const qualification = document.querySelector('select[name="last_qual"]')?.value;
+    
+    console.log('Loading document checklist for:', { country, qualification });
+    
+    if (!country) {
+        showEmptyChecklist();
+        return;
+    }
+    
+    showChecklistLoading();
+    
+    // Make API call to get document checklist
+    fetch('{{ route("applications.get-document-checklist") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            country: country,
+            qualification: qualification
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Document checklist response:', data);
+        
+        if (data.success && data.data) {
+            displayDocumentChecklist(data.data);
+        } else {
+            showChecklistError(data.message || 'Failed to load document checklist');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading document checklist:', error);
+        showChecklistError('Error loading document checklist: ' + error.message);
+    });
+}
+
+function showChecklistLoading() {
+    document.getElementById('documentChecklistLoading').classList.remove('hidden');
+    document.getElementById('documentChecklistEmpty').classList.add('hidden');
+    document.getElementById('documentChecklistContent').classList.add('hidden');
+}
+
+function showEmptyChecklist() {
+    document.getElementById('documentChecklistLoading').classList.add('hidden');
+    document.getElementById('documentChecklistEmpty').classList.remove('hidden');
+    document.getElementById('documentChecklistContent').classList.add('hidden');
+}
+
+function showChecklistError(message) {
+    document.getElementById('documentChecklistLoading').classList.add('hidden');
+    document.getElementById('documentChecklistEmpty').classList.remove('hidden');
+    document.getElementById('documentChecklistContent').classList.add('hidden');
+    
+    const emptyDiv = document.getElementById('documentChecklistEmpty');
+    emptyDiv.innerHTML = `
+        <svg class="w-12 h-12 mx-auto mb-4 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <p class="text-red-600">${message}</p>
+    `;
+}
+
+function displayDocumentChecklist(documents) {
+    console.log('Displaying documents:', documents);
+    
+    const content = document.getElementById('documentChecklistContent');
+    const loading = document.getElementById('documentChecklistLoading');
+    const empty = document.getElementById('documentChecklistEmpty');
+    
+    loading.classList.add('hidden');
+    empty.classList.add('hidden');
+    content.classList.remove('hidden');
+    
+    if (!Array.isArray(documents) || documents.length === 0) {
+        content.innerHTML = '<p class="text-gray-500 text-center py-4">No document requirements found for the selected criteria.</p>';
+        return;
+    }
+    
+    let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+    
+    documents.forEach((doc, index) => {
+        const isMandatory = doc.mandatory === true || doc.mandatory === 'true' || doc.mandatory === 1;
+        const mandatoryClass = isMandatory ? 'border-red-300 bg-red-50' : 'border-blue-200 bg-blue-50';
+        const mandatoryIcon = isMandatory ? 
+            '<svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>' :
+            '<svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>';
+        const mandatoryText = isMandatory ? 'Mandatory' : 'Optional';
+        const mandatoryBadgeClass = isMandatory ? 'bg-red-100 text-red-800 border-red-200' : 'bg-blue-100 text-blue-800 border-blue-200';
+        
+        html += `
+            <div class="border-2 rounded-xl p-4 ${mandatoryClass} transition-all hover:shadow-md">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        ${mandatoryIcon}
+                        <h4 class="font-medium text-gray-900">${doc.document || doc.name || 'Document'}</h4>
+                    </div>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${mandatoryBadgeClass}">
+                        ${mandatoryText}
+                    </span>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="relative">
+                        <input type="file" 
+                               name="documents[${index}][file]" 
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${isMandatory ? 'required' : ''}"
+                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                               ${isMandatory ? 'required' : ''}>
+                        ${isMandatory ? '<div class="text-xs text-red-600 mt-1 font-medium">* This document is required</div>' : ''}
+                    </div>
+                    
+                    <input type="hidden" name="documents[${index}][document_name]" value="${doc.document || doc.document_name || doc.name || 'Unknown Document'}">
+                    <input type="hidden" name="documents[${index}][document_type]" value="${doc.document_type || doc.type || 'general'}">
+                    <input type="hidden" name="documents[${index}][is_mandatory]" value="${doc.mandatory === 1 || doc.mandatory === '1' || doc.is_mandatory === '1' ? '1' : '0'}">
+                    
+                    <div class="text-xs text-gray-600">
+                        <p>Accepted formats: PDF, JPG, PNG, DOC, DOCX</p>
+                        <p>Maximum size: 10MB</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    content.innerHTML = html;
+}
+
+// Add event listeners for country and qualification changes
+document.addEventListener('DOMContentLoaded', function() {
+    // Listen for country changes
+    const countryInput = document.querySelector('input[name="country"]');
+    if (countryInput) {
+        countryInput.addEventListener('blur', loadDocumentChecklist);
+        countryInput.addEventListener('change', loadDocumentChecklist);
+    }
+    
+    // Listen for qualification changes
+    const qualificationSelect = document.querySelector('select[name="last_qual"]');
+    if (qualificationSelect) {
+        qualificationSelect.addEventListener('change', loadDocumentChecklist);
+    }
+    
+    console.log('Document checklist event listeners added');
+    
+    // Add form submission validation - DISABLED FOR DEBUGGING
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('Form submission started...');
+            
+            // Completely disable client-side validation for debugging
+            const skipClientValidation = true; // ALWAYS SKIP FOR NOW
+            
+            if (!skipClientValidation && !validateMandatoryDocuments()) {
+                console.log('Client-side validation failed');
+                e.preventDefault();
+                return false;
+            }
+            
+            console.log('Form submission proceeding without client-side validation...');
+            // Let form submit normally
+        });
+    }
+});
+
+// Form validation function
+function validateMandatoryDocuments() {
+    console.log('Starting mandatory document validation...');
+    
+    const documentInputs = document.querySelectorAll('input[name^="documents["][name$="][file]"]');
+    const mandatoryInputs = document.querySelectorAll('input[name^="documents["][name$="][is_mandatory]"][value="1"]');
+    
+    console.log('Found document inputs:', documentInputs.length);
+    console.log('Found mandatory inputs:', mandatoryInputs.length);
+    
+    let missingDocuments = [];
+    
+    mandatoryInputs.forEach(function(mandatoryInput) {
+        // Extract index from name attribute
+        const match = mandatoryInput.name.match(/documents\[(\d+)\]/);
+        if (match) {
+            const index = match[1];
+            const fileInput = document.querySelector(`input[name="documents[${index}][file]"]`);
+            const documentNameInput = document.querySelector(`input[name="documents[${index}][document_name]"]`);
+            
+            console.log(`Checking mandatory document ${index}:`, {
+                has_file_input: !!fileInput,
+                has_files: fileInput ? fileInput.files.length : 0,
+                document_name: documentNameInput ? documentNameInput.value : 'unknown'
+            });
+            
+            if (fileInput && (!fileInput.files || fileInput.files.length === 0)) {
+                const documentName = documentNameInput ? documentNameInput.value : `Document ${index}`;
+                missingDocuments.push(documentName);
+                console.log(`Missing mandatory document: ${documentName}`);
+            }
+        }
+    });
+    
+    if (missingDocuments.length > 0) {
+        console.log('Validation failed. Missing documents:', missingDocuments);
+        showValidationError('Please upload the following mandatory documents:', missingDocuments);
+        return false;
+    }
+    
+    console.log('Validation passed!');
+    return true;
+}
+
+function showValidationError(message, documents) {
+    // Remove existing error messages
+    const existingError = document.getElementById('document-validation-error');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Create error message
+    const errorDiv = document.createElement('div');
+    errorDiv.id = 'document-validation-error';
+    errorDiv.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50 max-w-md';
+    
+    let errorHTML = `
+        <div class="flex items-start">
+            <svg class="w-5 h-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+            </svg>
+            <div>
+                <strong class="font-medium">Validation Error</strong>
+                <p class="text-sm mt-1">${message}</p>
+                <ul class="text-sm mt-2 list-disc list-inside">
+    `;
+    
+    documents.forEach(function(doc) {
+        errorHTML += `<li>${doc}</li>`;
+    });
+    
+    errorHTML += `
+                </ul>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" class="mt-2 text-xs text-red-600 hover:text-red-800 underline">
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    `;
+    
+    errorDiv.innerHTML = errorHTML;
+    document.body.appendChild(errorDiv);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        if (errorDiv && errorDiv.parentNode) {
+            errorDiv.remove();
+        }
+    }, 10000);
+    
+    // Scroll to document checklist section
+    const documentSection = document.getElementById('documentChecklistContainer');
+    if (documentSection) {
+        documentSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
 </script>

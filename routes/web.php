@@ -6,6 +6,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\LeadController;
+use App\Http\Controllers\ApplicationController;
+use App\Http\Controllers\FollowupController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -53,6 +56,59 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings', [SettingsController::class, 'store'])->name('settings.store');
     Route::delete('/settings/{setting}', [SettingsController::class, 'destroy'])->name('settings.destroy');
     Route::post('/settings/initialize', [SettingsController::class, 'initializeDefaults'])->name('settings.initialize');
+    
+    // Lead Management Web Routes
+    Route::prefix('leads')->name('leads.')->group(function () {
+        Route::get('/', [LeadController::class, 'webIndex'])->name('index');
+        Route::get('/create', function () {
+            return view('leads.create');
+        })->name('create');
+        Route::post('/store', [LeadController::class, 'store'])->name('store');
+        Route::get('/{id}', [LeadController::class, 'webShow'])->name('show');
+        Route::get('/{id}/edit', function ($id) {
+            return view('leads.edit', compact('id'));
+        })->name('edit');
+        
+        // Follow-up Routes for a specific lead
+        Route::post('/{lead}/followups', [FollowupController::class, 'store'])->name('followups.store');
+        Route::put('/{lead}/followups/{followup}', [FollowupController::class, 'update'])->name('followups.update');
+        Route::delete('/{lead}/followups/{followup}', [FollowupController::class, 'destroy'])->name('followups.destroy');
+
+        // External API test route
+        Route::get('/test-external-api', [LeadController::class, 'testExternalApi'])->name('test-external-api');
+    });
+    
+    // Application Management Routes
+    Route::prefix('applications')->name('applications.')->group(function () {
+        Route::get('/', [ApplicationController::class, 'index'])->name('index');
+        Route::get('/create', [ApplicationController::class, 'create'])->name('create');
+        Route::post('/store', [ApplicationController::class, 'store'])->name('store');
+        
+        // AJAX endpoint for getting lead data - MUST BE BEFORE {id} routes to avoid conflicts
+        Route::match(['get', 'post'], '/get-lead-data', [ApplicationController::class, 'getLeadData'])->name('get-lead-data');
+        
+        // AJAX endpoint for getting document checklist
+        Route::post('/get-document-checklist', [ApplicationController::class, 'getDocumentChecklist'])->name('get-document-checklist');
+        
+        // Debug routes
+        Route::post('/debug-submission', [ApplicationController::class, 'debugApplicationSubmission'])->name('debug-submission');
+        Route::post('/test-simple-creation', [ApplicationController::class, 'testSimpleApplicationCreation'])->name('test-simple-creation');
+        
+        // External API test route
+        Route::get('/test-external-api', [ApplicationController::class, 'testExternalApiApplication'])->name('test-external-api');
+        
+        // Test application creation
+        Route::get('/test-creation', [ApplicationController::class, 'testApplicationCreation'])->name('test-creation');
+        
+        // Test API payload for specific application
+        Route::get('/{id}/test-api-payload', [ApplicationController::class, 'testApplicationApiPayload'])->name('test-api-payload');
+        
+        Route::get('/{id}', [ApplicationController::class, 'show'])->name('show');
+        Route::delete('/{id}', [ApplicationController::class, 'destroy'])->name('destroy');
+    });
+    
+    // Followup Management Routes
+    Route::resource('followups', \App\Http\Controllers\FollowupController::class);
 });
 
 // Redirect authenticated users from login page to dashboard

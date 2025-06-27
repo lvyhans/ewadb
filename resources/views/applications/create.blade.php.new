@@ -1,0 +1,550 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Apply Application</h1>
+                    <p class="text-gray-600 mt-2">Submit a new visa application form</p>
+                </div>
+                <a href="{{ route('applications.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Applications
+                </a>
+            </div>
+        </div>
+
+        <!-- Auto-fill Card -->
+        <div class="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden mb-8">
+            <div class="p-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                    <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    Auto-fill from Lead
+                </h3>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <p class="text-blue-800 text-sm flex items-start">
+                        <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>If you have a lead reference number, enter it below to automatically fill the form with existing lead data.</span>
+                    </p>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div class="flex-1">
+                        <label for="lead_ref_search" class="block text-sm font-medium text-gray-700 mb-2">Lead Reference Number</label>
+                        <input type="text" 
+                              id="lead_ref_search" 
+                              placeholder="Enter lead reference number (e.g., LEAD-000001)"
+                              class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                    </div>
+                    <div class="flex-shrink-0 pt-8">
+                        <button type="button" 
+                                onclick="fetchLeadData()" 
+                                class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-all shadow-sm">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            Fill from Lead Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Form Card -->
+        <div class="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+            <div class="p-8">
+                <form id="applicationForm" action="{{ route('applications.store') }}" method="POST">
+                    @csrf
+                    
+                    <!-- Lead Info & Country Selection -->
+                    <div class="mb-8">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">1</div>
+                            Lead Information & Preferred Country
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Lead Reference Number</label>
+                                <input type="text" name="lead_ref_no" id="lead_ref_no" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Lead reference">
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Preferred Country <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="preferred_country" id="preferred_country" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Enter preferred country" required>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Preferred City</label>
+                                <input type="text" name="preferred_city" id="preferred_city" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Enter preferred city">
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Preferred College</label>
+                                <input type="text" name="preferred_college" id="preferred_college" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Enter preferred college">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Personal Details -->
+                    <div class="mb-8">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">2</div>
+                            Personal Details
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Full Name <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="name" id="name" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Enter full name" required>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Date of Birth</label>
+                                <input type="date" name="date_of_birth" id="date_of_birth" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Gender</label>
+                                <select name="gender" id="gender" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                                    <option value="">Select Gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Nationality</label>
+                                <input type="text" name="nationality" id="nationality" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Enter nationality">
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Phone <span class="text-red-500">*</span>
+                                </label>
+                                <input type="tel" name="phone" id="phone" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Phone number" required>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Email</label>
+                                <input type="email" name="email" id="email" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Enter email address">
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Passport Number</label>
+                                <input type="text" name="passport_number" id="passport_number" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Enter passport number">
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Passport Expiry Date</label>
+                                <input type="date" name="passport_expiry" id="passport_expiry" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Study Details -->
+                    <div class="mb-8">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                            <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">3</div>
+                            Study Preferences
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Course Level</label>
+                                <select name="course_level" id="course_level" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                                    <option value="">Select Course Level</option>
+                                    <option value="certificate">Certificate</option>
+                                    <option value="diploma">Diploma</option>
+                                    <option value="bachelor">Bachelor's</option>
+                                    <option value="master">Master's</option>
+                                    <option value="phd">PhD</option>
+                                </select>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Field of Study</label>
+                                <input type="text" name="field_of_study" id="field_of_study" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Enter field of study">
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Intake Year</label>
+                                <select name="intake_year" id="intake_year" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                                    <option value="">Select Year</option>
+                                    <option value="2025">2025</option>
+                                    <option value="2026">2026</option>
+                                    <option value="2027">2027</option>
+                                    <option value="2028">2028</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Employment History -->
+                    <div class="mb-8">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                            <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">4</div>
+                            Employment History
+                        </h3>
+                        
+                        <div class="bg-gray-50/50 rounded-xl p-6 backdrop-blur-sm">
+                            <div id="employment-container" class="space-y-4">
+                                <div class="employment-row bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                                        <div class="space-y-2">
+                                            <label class="block text-sm font-medium text-gray-700">Company Name</label>
+                                            <input type="text" name="employment[0][company_name]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Company name">
+                                        </div>
+                                        
+                                        <div class="space-y-2">
+                                            <label class="block text-sm font-medium text-gray-700">Position</label>
+                                            <input type="text" name="employment[0][position]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Job title">
+                                        </div>
+                                        
+                                        <div class="space-y-2">
+                                            <label class="block text-sm font-medium text-gray-700">Location</label>
+                                            <input type="text" name="employment[0][location]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="City/Country">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="space-y-2">
+                                            <label class="block text-sm font-medium text-gray-700">Start Date</label>
+                                            <input type="date" name="employment[0][start_date]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                                        </div>
+                                        
+                                        <div class="space-y-2">
+                                            <label class="block text-sm font-medium text-gray-700">End Date</label>
+                                            <input type="date" name="employment[0][end_date]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                                        </div>
+                                        
+                                        <div class="flex justify-end items-end">
+                                            <button type="button" class="add-employment px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors cursor-pointer flex items-center gap-2" 
+                                                  title="Add another work experience" 
+                                                  onclick="addEmploymentRow();">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                                </svg>
+                                                <span class="hidden sm:inline">Add More</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Information -->
+                    <div class="mb-8">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                            <div class="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">5</div>
+                            Additional Information
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 gap-6">
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Additional Notes</label>
+                                <textarea name="notes" rows="4" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Any additional information..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Assigned User Dropdown (for admin) -->
+                        @if(!auth()->user()->isMember())
+                        <div class="space-y-2">
+                            <label for="assigned_to" class="block text-sm font-medium text-gray-700">Assign To</label>
+                            <select name="assigned_to" id="assigned_to" 
+                                   class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                                <option value="">Select User</option>
+                                @foreach($users as $user)
+                                <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @endif
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="flex justify-end space-x-4 mt-8">
+                        <button type="button" onclick="window.history.back()" class="px-6 py-3 bg-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-400 transition-all shadow-sm">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-8 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-all shadow-sm">
+                            Submit Application
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section('scripts')
+<script>
+    let employmentRowCount = 1;
+    
+    function addEmploymentRow() {
+        const container = document.getElementById('employment-container');
+        const newRow = document.createElement('div');
+        newRow.className = 'employment-row bg-white rounded-xl p-6 shadow-sm border border-gray-100 mt-4';
+        
+        newRow.innerHTML = `
+            <div class="flex justify-between mb-4">
+                <h4 class="font-medium text-gray-900">Additional Employment</h4>
+                <button type="button" class="text-red-500 hover:text-red-700" onclick="removeEmploymentRow(this)">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Company Name</label>
+                    <input type="text" name="employment[${employmentRowCount}][company_name]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Company name">
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Position</label>
+                    <input type="text" name="employment[${employmentRowCount}][position]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Job title">
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Location</label>
+                    <input type="text" name="employment[${employmentRowCount}][location]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="City/Country">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Start Date</label>
+                    <input type="date" name="employment[${employmentRowCount}][start_date]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">End Date</label>
+                    <input type="date" name="employment[${employmentRowCount}][end_date]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(newRow);
+        employmentRowCount++;
+    }
+    
+    function removeEmploymentRow(button) {
+        const row = button.closest('.employment-row');
+        row.remove();
+    }
+    
+    function fetchLeadData() {
+        const leadRefNo = document.getElementById('lead_ref_search').value.trim();
+    
+        if (!leadRefNo) {
+            showMessage('Please enter a lead reference number', 'error');
+            return;
+        }
+    
+        // Show loading
+        showMessage('Fetching lead data...', 'info');
+    
+        fetch('/applications/get-lead-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ lead_ref_no: leadRefNo })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                fillFormWithLeadData(data.data, data.employment_history);
+                showMessage('Lead data loaded successfully!', 'success');
+            } else {
+                showMessage(data.message || 'Lead not found', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Error fetching lead data', 'error');
+        });
+    }
+    
+    function fillFormWithLeadData(leadData, employmentHistory) {
+        // Fill basic fields
+        const fields = [
+            'lead_ref_no', 'name', 'email', 'phone', 'date_of_birth', 'gender', 'nationality',
+            'passport_number', 'passport_expiry', 'marital_status', 'preferred_country',
+            'preferred_city', 'preferred_college', 'course_level', 'field_of_study',
+            'intake_year'
+        ];
+    
+        fields.forEach(field => {
+            const element = document.getElementById(field);
+            if (element && leadData[field]) {
+                element.value = leadData[field];
+            }
+        });
+    
+        // Fill employment history
+        const container = document.getElementById('employment-container');
+        container.innerHTML = ''; // Clear existing rows
+    
+        if (employmentHistory && employmentHistory.length > 0) {
+            employmentHistory.forEach((employment, index) => {
+                if (index === 0) {
+                    // Fill the first row that already exists
+                    document.querySelector('input[name="employment[0][company_name]"]').value = employment.company_name || '';
+                    document.querySelector('input[name="employment[0][position]"]').value = employment.position || '';
+                    document.querySelector('input[name="employment[0][location]"]').value = employment.location || '';
+                    document.querySelector('input[name="employment[0][start_date]"]').value = employment.start_date || '';
+                    document.querySelector('input[name="employment[0][end_date]"]').value = employment.end_date || '';
+                } else {
+                    // Add new rows for additional employment history
+                    const newRow = document.createElement('div');
+                    newRow.className = 'employment-row bg-white rounded-xl p-6 shadow-sm border border-gray-100 mt-4';
+                    
+                    newRow.innerHTML = `
+                        <div class="flex justify-between mb-4">
+                            <h4 class="font-medium text-gray-900">Additional Employment</h4>
+                            <button type="button" class="text-red-500 hover:text-red-700" onclick="removeEmploymentRow(this)">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Company Name</label>
+                                <input type="text" name="employment[${index}][company_name]" value="${employment.company_name || ''}" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Company name">
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Position</label>
+                                <input type="text" name="employment[${index}][position]" value="${employment.position || ''}" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Job title">
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Location</label>
+                                <input type="text" name="employment[${index}][location]" value="${employment.location || ''}" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="City/Country">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Start Date</label>
+                                <input type="date" name="employment[${index}][start_date]" value="${employment.start_date || ''}" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">End Date</label>
+                                <input type="date" name="employment[${index}][end_date]" value="${employment.end_date || ''}" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                            </div>
+                        </div>
+                    `;
+                    
+                    container.appendChild(newRow);
+                    employmentRowCount = Math.max(employmentRowCount, index + 1);
+                }
+            });
+        } else {
+            // If no employment history, add an empty row
+            const emptyRow = document.createElement('div');
+            emptyRow.className = 'employment-row bg-white rounded-xl p-6 shadow-sm border border-gray-100';
+            
+            emptyRow.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Company Name</label>
+                        <input type="text" name="employment[0][company_name]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Company name">
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Position</label>
+                        <input type="text" name="employment[0][position]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Job title">
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Location</label>
+                        <input type="text" name="employment[0][location]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="City/Country">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Start Date</label>
+                        <input type="date" name="employment[0][start_date]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">End Date</label>
+                        <input type="date" name="employment[0][end_date]" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                    </div>
+                    
+                    <div class="flex justify-end items-end">
+                        <button type="button" class="add-employment px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors cursor-pointer flex items-center gap-2" 
+                               title="Add another work experience" 
+                               onclick="addEmploymentRow();">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            <span class="hidden sm:inline">Add More</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(emptyRow);
+        }
+    }
+
+    function showMessage(message, type = 'info') {
+        const alertContainer = document.createElement('div');
+        alertContainer.className = `fixed top-4 right-4 p-4 rounded-xl shadow-lg z-50 transition-all transform duration-500 ease-in-out`;
+        
+        let bgColor = 'bg-blue-500';
+        if (type === 'success') bgColor = 'bg-green-500';
+        if (type === 'error') bgColor = 'bg-red-500';
+        if (type === 'warning') bgColor = 'bg-yellow-500';
+        
+        alertContainer.classList.add(bgColor);
+        
+        alertContainer.innerHTML = `
+            <div class="flex items-center text-white">
+                <span class="font-medium">${message}</span>
+                <button class="ml-4" onclick="this.parentElement.parentElement.remove()">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(alertContainer);
+        
+        // Auto dismiss after 5 seconds
+        setTimeout(() => {
+            alertContainer.classList.add('opacity-0', '-translate-y-2');
+            setTimeout(() => alertContainer.remove(), 500);
+        }, 5000);
+    }
+</script>
+@endsection

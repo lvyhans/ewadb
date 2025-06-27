@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Follow-up Form Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .code { background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Follow-up Form JavaScript Fix Applied</h1>
+    
+    <div class="test-section success">
+        <h2>✅ Issues Fixed</h2>
+        <ul>
+            <li><strong>CSRF Token Missing:</strong> Added missing CSRF meta tag to layout</li>
+            <li><strong>Null Reference Error:</strong> Added proper null checking for CSRF token</li>
+            <li><strong>Form Event Listeners:</strong> Wrapped in DOMContentLoaded for proper initialization</li>
+            <li><strong>Error Handling:</strong> Added console logging for debugging</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔧 Changes Made</h2>
+        
+        <h3>1. Layout File (app.blade.php)</h3>
+        <div class="code">
+            &lt;meta name="csrf-token" content="{{ csrf_token() }}"&gt;
+        </div>
+        <p>Added CSRF token meta tag that was missing from the layout.</p>
+        
+        <h3>2. Follow-up JavaScript (show.blade.php)</h3>
+        <div class="code">
+const csrfToken = document.querySelector('meta[name="csrf-token"]');<br>
+const headers = {};<br><br>
+if (csrfToken) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;headers['X-CSRF-TOKEN'] = csrfToken.getAttribute('content');<br>
+&nbsp;&nbsp;&nbsp;&nbsp;console.log('CSRF token found and added to headers');<br>
+} else {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;console.error('CSRF token not found!');<br>
+}
+        </div>
+        <p>Added null checking and error logging for CSRF token handling.</p>
+        
+        <h3>3. DOM Ready Event</h3>
+        <div class="code">
+document.addEventListener('DOMContentLoaded', function() {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const followupForm = document.getElementById('followupForm');<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const editFollowupForm = document.getElementById('editFollowupForm');<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;if (followupForm) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Form event listener<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+});
+        </div>
+        <p>Wrapped form event listeners in DOMContentLoaded to ensure elements exist before binding events.</p>
+    </div>
+    
+    <div class="test-section">
+        <h2>🧪 Testing Steps</h2>
+        <ol>
+            <li><strong>Clear Browser Cache:</strong> Clear cache and hard refresh (Ctrl+Shift+R / Cmd+Shift+R)</li>
+            <li><strong>Open Developer Tools:</strong> Check console for any remaining errors</li>
+            <li><strong>Test Follow-up Form:</strong> Try adding a new follow-up</li>
+            <li><strong>Check Console Logs:</strong> Look for "Follow-up form submitted" and "CSRF token found" messages</li>
+            <li><strong>Test Edit Form:</strong> Try editing an existing follow-up</li>
+        </ol>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔍 Debugging Information</h2>
+        <p>If you still encounter issues, check the browser console for these messages:</p>
+        <ul>
+            <li><strong>Success:</strong> "Follow-up form submitted" + "CSRF token found and added to headers"</li>
+            <li><strong>Error:</strong> "CSRF token not found!" - indicates the meta tag is still missing</li>
+            <li><strong>Network Error:</strong> Check the Network tab for HTTP status codes and response details</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>🚀 Test the Fix</h2>
+        <p><strong>Go to:</strong> <a href="http://127.0.0.1:8000/leads" target="_blank">http://127.0.0.1:8000/leads</a></p>
+        <p>1. Click on any lead to view details</p>
+        <p>2. Click "Add Follow-up" button</p>
+        <p>3. Fill out the form and click "Add Follow-up"</p>
+        <p>4. Check that the form submits without console errors</p>
+    </div>
+    
+    <div class="test-section error">
+        <h2>⚠️ If Still Not Working</h2>
+        <p>If you still get the error, please:</p>
+        <ol>
+            <li>Open browser developer tools (F12)</li>
+            <li>Go to Console tab</li>
+            <li>Try submitting the follow-up form</li>
+            <li>Share any new error messages that appear</li>
+        </ol>
+    </div>
+</body>
+</html>

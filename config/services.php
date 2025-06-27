@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'external_api' => [
+        'enquiry_lead_url' => env('EXTERNAL_API_ENQUIRY_LEAD_URL'),
+        'checklist_url' => env('EXTERNAL_API_CHECKLIST_URL'),
+        'enabled' => env('EXTERNAL_API_ENABLED', false),
+    ],
+
 ];
