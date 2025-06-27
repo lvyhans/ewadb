@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scroll Test</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 20px; 
+            font-family: Arial, sans-serif;
+        }
+        .section { 
+            height: 100vh; 
+            padding: 40px; 
+            margin: 20px 0; 
+            border: 2px solid #ddd; 
+            background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+        }
+        #reverts-section { 
+            background: linear-gradient(45deg, #ffcccc, #ffdddd); 
+            border-color: #ff0000;
+        }
+        .highlight {
+            background: #fef3c7 !important;
+            transition: background-color 0.5s ease;
+        }
+        .debug {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: black;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug" id="debug">Scroll Test Page</div>
+    
+    <div class="section">
+        <h1>Section 1</h1>
+        <p>This is the first section. Scroll down to see more content.</p>
+        <p><a href="?scroll=bottom">Test Scroll to Bottom</a></p>
+    </div>
+    
+    <div class="section">
+        <h2>Section 2</h2>
+        <p>This is the second section.</p>
+    </div>
+    
+    <div class="section">
+        <h2>Section 3</h2>
+        <p>This is the third section.</p>
+    </div>
+    
+    <div id="reverts-section" class="section">
+        <h2>Reverts Section (Target)</h2>
+        <p>This should be scrolled to when URL has ?scroll=bottom</p>
+        <p>If you can see this section highlighted briefly, the scroll functionality is working!</p>
+    </div>
+    
+    <div class="section">
+        <h2>Final Section</h2>
+        <p>This is the last section at the bottom of the page.</p>
+    </div>
+    
+    <script>
+        function updateDebug(message) {
+            document.getElementById('debug').innerHTML = message;
+            console.log(message);
+        }
+        
+        // Handle scroll parameter from notification clicks
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const scrollParam = urlParams.get('scroll');
+            
+            updateDebug('Page loaded. Scroll param: ' + (scrollParam || 'none'));
+            
+            if (scrollParam === 'bottom') {
+                updateDebug('Scroll parameter detected: bottom');
+                
+                // Wait a moment for the page to fully render
+                setTimeout(() => {
+                    const revertsSection = document.querySelector('#reverts-section');
+                    
+                    if (revertsSection) {
+                        updateDebug('Scrolling to reverts section');
+                        revertsSection.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'start' 
+                        });
+                        
+                        // Add a highlight effect to make it obvious
+                        revertsSection.classList.add('highlight');
+                        setTimeout(() => {
+                            revertsSection.classList.remove('highlight');
+                        }, 2000);
+                        
+                    } else {
+                        updateDebug('No reverts section found, scrolling to page bottom');
+                        // Fallback: scroll to bottom of the page
+                        window.scrollTo({
+                            top: document.body.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }
+                    
+                    // Remove the scroll parameter from URL after 2 seconds
+                    setTimeout(() => {
+                        const cleanUrl = window.location.pathname;
+                        window.history.replaceState({}, '', cleanUrl);
+                        updateDebug('URL cleaned: ' + cleanUrl);
+                    }, 2000);
+                    
+                }, 800);
+            }
+        });
+    </script>
+</body>
+</html>

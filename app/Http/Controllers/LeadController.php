@@ -235,12 +235,30 @@ class LeadController extends Controller
      */
     public function show($id)
     {
-        $lead = Lead::with(['employmentHistory', 'followups.user', 'creator', 'assignedUser'])
-                   ->findOrFail($id);
+        $lead = Lead::with([
+            'employmentHistory', 
+            'followups.user', 
+            'creator', 
+            'assignedUser',
+            'reverts' => function($query) {
+                $query->with('resolver:id,name')->orderBy('created_at', 'desc');
+            }
+        ])->findOrFail($id);
+
+        // Add revert statistics
+        $revertStats = [
+            'total_reverts' => $lead->reverts->count(),
+            'active_reverts' => $lead->reverts->where('status', 'active')->count(),
+            'resolved_reverts' => $lead->reverts->where('status', 'resolved')->count(),
+            'overdue_reverts' => $lead->reverts->filter->isOverdue()->count(),
+            'high_priority_active' => $lead->reverts->where('status', 'active')->where('priority', 'high')->count(),
+            'urgent_priority_active' => $lead->reverts->where('status', 'active')->where('priority', 'urgent')->count(),
+        ];
 
         return response()->json([
             'success' => true,
-            'data' => $lead
+            'data' => $lead,
+            'revert_statistics' => $revertStats
         ]);
     }
 

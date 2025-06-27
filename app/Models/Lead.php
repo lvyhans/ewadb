@@ -95,6 +95,30 @@ class Lead extends Model
     }
 
     /**
+     * Get the reverts for the lead
+     */
+    public function reverts()
+    {
+        return $this->hasMany(LeadRevert::class);
+    }
+
+    /**
+     * Get active reverts for the lead
+     */
+    public function activeReverts()
+    {
+        return $this->hasMany(LeadRevert::class)->where('status', 'active');
+    }
+
+    /**
+     * Get resolved reverts for the lead
+     */
+    public function resolvedReverts()
+    {
+        return $this->hasMany(LeadRevert::class)->where('status', 'resolved');
+    }
+
+    /**
      * Get the user who created this lead
      */
     public function creator()

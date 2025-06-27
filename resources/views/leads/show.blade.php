@@ -349,7 +349,7 @@
     <div class="glass-effect rounded-2xl shadow-xl border border-white/20 p-6 mt-6">
         <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
             <svg class="w-6 h-6 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 2.5V6a2 2 0 00-2-2H10a2 2 0 00-2 2v.5m8 0V9a2 2 0 01-2 2H10a2 2 0 01-2-2v-.5m8 0h.5a2 2 0 012 2V16a2 2 0 01-2 2h-13a2 2 0 01-2-2V8.5a2 2 0 012-2H8"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m8 2.5V6a2 2 0 00-2-2H10a2 2 0 00-2 2v.5m8 0V9a2 2 0 01-2 2H10a2 2 0 01-2-2v-.5m8 0h.5a2 2 0 012 2V16a2 2 0 01-2 2h-13a2 2 0 01-2-2V8.5a2 2 0 012-2H8"></path>
             </svg>
             Employment History
         </h2>
@@ -498,6 +498,46 @@
         @endif
     </div>
     @endif
+
+    <!-- Lead Reverts Section -->
+    <div id="reverts-section" class="glass-effect rounded-2xl shadow-xl border border-white/20 p-6 mt-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+            <svg class="w-6 h-6 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+            </svg>
+            Reverts & Remarks
+        </h2>
+        
+        @if(isset($lead->reverts) && $lead->reverts->count() > 0)
+            <div class="space-y-4" id="revertsContainer">
+                @foreach($lead->reverts->sortByDesc('created_at') as $revert)
+                <div class="border border-white/20 rounded-xl p-4 bg-white/20">
+                    <div class="mb-2">
+                        <p class="text-sm text-gray-600">
+                            <strong>{{ $revert->submitted_by }}</strong> ({{ $revert->team_name }}) • 
+                            {{ $revert->created_at->format('M d, Y H:i A') }}
+                        </p>
+                    </div>
+                    <div class="pl-4 border-l-2 border-orange-200">
+                        <p class="text-gray-700">{{ $revert->revert_message }}</p>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        @else
+            <div class="text-center py-8">
+                <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                </svg>
+                <p class="text-gray-500 mb-4">No reverts or remarks received yet</p>
+                <div class="bg-blue-50 rounded-lg p-4 mt-4">
+                    <h4 class="font-semibold text-blue-800 mb-2">API Information for External Teams</h4>
+                    <p class="text-sm text-blue-600 mb-2">Reference Number: <code class="bg-blue-100 px-2 py-1 rounded">{{ $lead->ref_no }}</code></p>
+                    <p class="text-xs text-blue-500">External teams can submit reverts using our API with this reference number.</p>
+                </div>
+            </div>
+        @endif
+    </div>
 </div>
 
 <!-- Add Follow-up Modal -->
@@ -789,6 +829,192 @@ function completeFollowup(followupId) {
     }
 }
 
+// Close modals when clicking outside
+document.addEventListener('click', function(e) {
+    if (e.target.id === 'followupModal') {
+        closeFollowupModal();
+    }
+    if (e.target.id === 'editFollowupModal') {
+        closeEditFollowupModal();
+    }
+});
+
+// Lead Reverts Management Functions
+function refreshReverts() {
+    // Refresh the page to get latest reverts
+    // In a more advanced implementation, this could be an AJAX call
+    window.location.reload();
+}
+
+function resolveRevert(revertId) {
+    if (!confirm('Are you sure you want to resolve this revert?')) {
+        return;
+    }
+
+    const notes = prompt('Resolution notes (optional):');
+    
+    fetch(`/api/lead-reverts/${revertId}/resolve`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            resolution_notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Revert resolved successfully', 'success');
+            // Update the revert item in the DOM
+            updateRevertItem(revertId, 'resolved', notes);
+        } else {
+            showAlert(data.message || 'Failed to resolve revert', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred while resolving the revert', 'error');
+    });
+}
+
+function reopenRevert(revertId) {
+    if (!confirm('Are you sure you want to reopen this revert?')) {
+        return;
+    }
+
+    fetch(`/api/lead-reverts/${revertId}/reopen`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Revert reopened successfully', 'success');
+            // Update the revert item in the DOM
+            updateRevertItem(revertId, 'active');
+        } else {
+            showAlert(data.message || 'Failed to reopen revert', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred while reopening the revert', 'error');
+    });
+}
+
+function archiveRevert(revertId) {
+    if (!confirm('Are you sure you want to archive this revert? This action cannot be undone.')) {
+        return;
+    }
+
+    fetch(`/api/lead-reverts/${revertId}/archive`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Revert archived successfully', 'success');
+            // Remove or fade out the revert item
+            const revertItem = document.querySelector(`[data-revert-id="${revertId}"]`);
+            if (revertItem) {
+                revertItem.style.opacity = '0.5';
+                revertItem.style.pointerEvents = 'none';
+                const archivedBadge = document.createElement('span');
+                archivedBadge.className = 'inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800';
+                archivedBadge.textContent = 'Archived';
+                revertItem.querySelector('.flex-1').appendChild(archivedBadge);
+            }
+        } else {
+            showAlert(data.message || 'Failed to archive revert', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred while archiving the revert', 'error');
+    });
+}
+
+function updateRevertItem(revertId, newStatus, resolutionNotes = null) {
+    const revertItem = document.querySelector(`[data-revert-id="${revertId}"]`);
+    if (!revertItem) return;
+
+    // Update status badge
+    const statusBadges = revertItem.querySelectorAll('.inline-flex.px-2.py-1.text-xs.font-semibold.rounded-full');
+    statusBadges.forEach(badge => {
+        if (badge.textContent.toLowerCase().includes('active') || 
+            badge.textContent.toLowerCase().includes('resolved') || 
+            badge.textContent.toLowerCase().includes('archived')) {
+            badge.className = 'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + 
+                (newStatus === 'active' ? 'bg-orange-100 text-orange-800' : 
+                 newStatus === 'resolved' ? 'bg-green-100 text-green-800' : 
+                 'bg-gray-100 text-gray-800');
+            badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+        }
+    });
+
+    // Update action buttons
+    const buttonContainer = revertItem.querySelector('.flex.space-x-2');
+    if (buttonContainer) {
+        buttonContainer.innerHTML = '';
+        
+        if (newStatus === 'active') {
+            buttonContainer.innerHTML = `
+                <button class="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors" 
+                        onclick="resolveRevert(${revertId})">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Resolve
+                </button>
+                <button class="inline-flex items-center px-2 py-1 bg-gray-600 text-white text-xs rounded-lg hover:bg-gray-700 transition-colors" 
+                        onclick="archiveRevert(${revertId})">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6m0 0l6-6m-6 6V3"></path>
+                    </svg>
+                    Archive
+                </button>
+            `;
+        } else if (newStatus === 'resolved') {
+            buttonContainer.innerHTML = `
+                <button class="inline-flex items-center px-2 py-1 bg-orange-600 text-white text-xs rounded-lg hover:bg-orange-700 transition-colors" 
+                        onclick="reopenRevert(${revertId})">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Reopen
+                </button>
+                <button class="inline-flex items-center px-2 py-1 bg-gray-600 text-white text-xs rounded-lg hover:bg-gray-700 transition-colors" 
+                        onclick="archiveRevert(${revertId})">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6m0 0l6-6m-6 6V3"></path>
+                    </svg>
+                    Archive
+                </button>
+            `;
+        }
+    }
+
+    // Add resolution notes if provided
+    if (resolutionNotes && newStatus === 'resolved') {
+        const messageContainer = revertItem.querySelector('.pl-4.border-l-2');
+        if (messageContainer && !messageContainer.querySelector('.bg-green-50')) {
+            const resolutionDiv = document.createElement('div');
+            resolutionDiv.className = 'mt-3 p-3 bg-green-50 rounded-lg border-l-4 border-green-400';
+            resolutionDiv.innerHTML = `<p class="text-sm text-gray-600"><strong>Resolution:</strong> ${resolutionNotes}</p>`;
+            messageContainer.appendChild(resolutionDiv);
+        }
+    }
+}
+
 // Make functions globally available
 window.addFollowup = addFollowup;
 window.editFollowup = editFollowup;
@@ -981,5 +1207,57 @@ document.addEventListener('click', function(e) {
 });
 
 console.log('Lead show page script fully loaded');
+
+// Handle scroll parameter from notification clicks
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const scrollParam = urlParams.get('scroll');
+    
+    if (scrollParam === 'bottom') {
+        console.log('Scroll parameter detected: bottom');
+        
+        // Wait a moment for the page to fully render
+        setTimeout(() => {
+            const revertsSection = document.querySelector('#reverts-section');
+            const remarksSection = document.querySelector('#remarks-section');
+            
+            if (revertsSection) {
+                console.log('Scrolling to reverts section');
+                revertsSection.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+                
+                // Add a highlight effect to make it obvious
+                revertsSection.style.backgroundColor = '#fef3c7';
+                setTimeout(() => {
+                    revertsSection.style.backgroundColor = '';
+                }, 2000);
+                
+            } else if (remarksSection) {
+                console.log('Scrolling to remarks section');
+                remarksSection.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            } else {
+                console.log('No reverts/remarks section found, scrolling to page bottom');
+                // Fallback: scroll to bottom of the page
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+            
+            // Remove the scroll parameter from URL after 2 seconds
+            setTimeout(() => {
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({}, '', cleanUrl);
+                console.log('URL cleaned:', cleanUrl);
+            }, 2000);
+            
+        }, 800); // Increased delay to ensure page is fully loaded
+    }
+});
 </script>
 @endsection

@@ -99,6 +99,92 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
+        /* Alpine.js cloak - hide until Alpine loads */
+        [x-cloak] { 
+            display: none !important; 
+        }
+        
+        /* ULTIMATE NOTIFICATION DROPDOWN FIX - ALWAYS ON TOP */
+        .notification-dropdown-panel {
+            position: fixed !important;
+            z-index: 2147483647 !important; /* Maximum z-index value */
+            transform: none !important;
+            will-change: auto !important;
+            backface-visibility: visible !important;
+            perspective: none !important;
+            contain: none !important;
+            isolation: auto !important;
+            mix-blend-mode: normal !important;
+            filter: none !important;
+            clip: auto !important;
+            clip-path: none !important;
+            mask: none !important;
+            overflow: visible !important;
+            pointer-events: auto !important;
+            
+            /* Force break out of any stacking context */
+            top: 70px !important;
+            right: 20px !important;
+            left: auto !important;
+            bottom: auto !important;
+            
+            /* Ensure it's rendered in its own layer */
+            transform: translate3d(0, 0, 0) !important;
+            
+            /* Override any parent constraints */
+            max-height: none !important;
+            max-width: none !important;
+        }
+        
+        /* When Alpine.js shows the dropdown - override display:none */
+        #global-notification-dropdown[x-show="open"]:not([style*="display: none"]) {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        /* Ensure notification button container doesn't clip */
+        .notification-container {
+            position: static !important;
+            overflow: visible !important;
+            contain: none !important;
+            isolation: auto !important;
+            transform: none !important;
+            z-index: auto !important;
+        }
+        
+        /* Force header to not clip children */
+        .topbar {
+            overflow: visible !important;
+            contain: none !important;
+            isolation: auto !important;
+            transform: none !important;
+            z-index: auto !important;
+        }
+        
+        /* Force main layout containers to not clip */
+        .main-content,
+        .flex,
+        .relative {
+            overflow: visible !important;
+            contain: none !important;
+            isolation: auto !important;
+        }
+        
+        /* Ensure dropdown shows with backdrop blur */
+        .notification-dropdown-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 0.75rem;
+            z-index: -1;
+        }
+        
         .gradient-text {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
@@ -136,8 +222,20 @@
         }
         
         /* Z-index layers for proper stacking */
+        .notification-dropdown-panel {
+            position: fixed !important;
+            z-index: 999999 !important;
+            top: 70px !important;
+            right: 20px !important;
+        }
+        
+        .notification-dropdown {
+            position: fixed !important;
+            z-index: 999999 !important;
+        }
+        
         .dropdown-menu {
-            z-index: 9999 !important;
+            z-index: 99999 !important;
         }
         
         .modal-backdrop {
@@ -146,6 +244,16 @@
         
         .sidebar {
             z-index: 9997 !important;
+        }
+        
+        /* Override any parent overflow hidden */
+        .notification-dropdown-panel {
+            overflow: visible !important;
+        }
+        
+        /* Hide elements initially with x-cloak */
+        [x-cloak] { 
+            display: none !important; 
         }
         
         .main-content {
@@ -421,44 +529,16 @@
                         </div>
                         
                         <!-- Notifications -->
-                        <div class="relative" x-data="{ open: false }">
-                            <button @click="open = !open" 
+                        <div class="notification-container relative" x-data="{ unreadCount: $store.notifications.unreadCount }">
+                            <button @click="window.toggleNotificationDropdown();" 
                                     class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-white/50 rounded-xl transition-all duration-200 group">
                                 <svg class="w-6 h-6 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5-5V9a4 4 0 00-8 0v3L2 17h5m8 0v1a3 3 0 01-6 0v-1m6 0H9"></path>
                                 </svg>
-                                <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                                <span x-show="$store.notifications.unreadCount > 0" 
+                                      x-text="$store.notifications.unreadCount" 
+                                      class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse"></span>
                             </button>
-                            
-                            <div x-show="open" 
-                                 @click.away="open = false" 
-                                 x-transition:enter="transition ease-out duration-200"
-                                 x-transition:enter-start="opacity-0 transform scale-95"
-                                 x-transition:enter-end="opacity-100 transform scale-100"
-                                 x-transition:leave="transition ease-in duration-75"
-                                 x-transition:leave-start="opacity-100 transform scale-100"
-                                 x-transition:leave-end="opacity-0 transform scale-95"
-                                 class="absolute right-0 w-80 mt-2 origin-top-right glass-effect rounded-xl shadow-xl ring-1 ring-black/5 z-[9999]">
-                                <div class="p-4">
-                                    <h3 class="text-lg font-semibold text-gray-900 mb-3">Notifications</h3>
-                                    <div class="space-y-3">
-                                        <div class="flex items-start space-x-3 p-3 rounded-lg hover:bg-white/50 transition-colors">
-                                            <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                                            <div>
-                                                <p class="text-sm font-medium text-gray-900">New user registered</p>
-                                                <p class="text-xs text-gray-600">2 minutes ago</p>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-start space-x-3 p-3 rounded-lg hover:bg-white/50 transition-colors">
-                                            <div class="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                                            <div>
-                                                <p class="text-sm font-medium text-gray-900">System update completed</p>
-                                                <p class="text-xs text-gray-600">1 hour ago</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                         
                         <!-- User Menu -->
@@ -485,7 +565,7 @@
                                  x-transition:leave="transition ease-in duration-75"
                                  x-transition:leave-start="opacity-100 transform scale-100"
                                  x-transition:leave-end="opacity-0 transform scale-95"
-                                 class="absolute right-0 w-56 mt-2 origin-top-right glass-effect rounded-xl shadow-xl ring-1 ring-black/5 z-[9999]">
+                                 class="absolute right-0 w-56 mt-2 origin-top-right glass-effect rounded-xl shadow-xl ring-1 ring-black/5 z-[99998]">
                                 <div class="p-2">
                                     <div class="px-3 py-2 border-b border-white/20">
                                         <p class="text-sm font-medium text-gray-900">{{ auth()->user()->name }}</p>
@@ -562,13 +642,269 @@
     @stack('scripts')
     
     <script>
-        // Lead Management Functions        function loadTodaysFollowups() {
+        // Initialize Alpine.js stores
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('notifications', {
+                unreadCount: 0
+            });
+        });
+        
+        // Notification Dropdown Component
+        function notificationDropdown() {
+            return {
+                open: false,
+                loading: false,
+                notifications: [],
+                unreadCount: 0,
+                
+                async init() {
+                    // Set up global reference for toggle function
+                    window.notificationDropdown = this;
+                    
+                    // Only fetch unread count, not full notifications
+                    await this.fetchUnreadCount();
+                    
+                    // Update global count
+                    window.updateNotificationCount(this.unreadCount);
+                    
+                    // Poll for new notifications every 30 seconds
+                    setInterval(async () => {
+                        await this.fetchUnreadCount();
+                        window.updateNotificationCount(this.unreadCount);
+                    }, 30000);
+                },
+                
+                async toggleDropdown() {
+                    this.open = !this.open;
+                    
+                    if (this.open && this.notifications.length === 0) {
+                        await this.fetchNotifications();
+                    }
+                },
+                
+                async fetchNotifications() {
+                    this.loading = true;
+                    try {
+                        const response = await fetch('{{ route("notifications.index") }}', {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.notifications = data.notifications || [];
+                            this.unreadCount = data.unread_count || 0;
+                        }
+                    } catch (error) {
+                        console.error('Error fetching notifications:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async fetchUnreadCount() {
+                    try {
+                        const response = await fetch('{{ route("notifications.unread-count") }}', {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.unreadCount = data.unread_count || 0;
+                            // Update global count
+                            window.updateNotificationCount(this.unreadCount);
+                        }
+                    } catch (error) {
+                        console.error('Error fetching unread count:', error);
+                    }
+                },
+                
+                async markAsReadAndRedirect(notification) {
+                    console.log('Notification clicked:', notification);
+                    
+                    try {
+                        // Close the dropdown immediately
+                        this.open = false;
+                        
+                        // Mark as read (don't wait for response to avoid delay)
+                        fetch(`/notifications/${notification.id}/read`, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        }).then(response => {
+                            if (response.ok) {
+                                console.log('Notification marked as read');
+                            }
+                        }).catch(error => {
+                            console.error('Error marking notification as read:', error);
+                        });
+                        
+                        // Construct the URL with scroll parameter
+                        let targetUrl;
+                        if (notification.action_url) {
+                            const url = new URL(notification.action_url, window.location.origin);
+                            url.searchParams.set('scroll', 'bottom');
+                            targetUrl = url.toString();
+                        } else if (notification.lead_id) {
+                            targetUrl = `{{ url('/leads') }}/${notification.lead_id}?scroll=bottom`;
+                        }
+                        
+                        console.log('Redirecting to:', targetUrl);
+                        
+                        if (targetUrl) {
+                            // Navigate to the lead page with scroll parameter
+                            window.location.href = targetUrl;
+                        }
+                        
+                        // Update local state
+                        notification.read_at = new Date().toISOString();
+                        this.unreadCount = Math.max(0, this.unreadCount - 1);
+                        window.updateNotificationCount(this.unreadCount);
+                        
+                    } catch (error) {
+                        console.error('Error in markAsReadAndRedirect:', error);
+                        
+                        // Fallback redirect
+                        const fallbackUrl = notification.action_url || `{{ url('/leads') }}/${notification.lead_id}`;
+                        if (fallbackUrl) {
+                            window.location.href = fallbackUrl + '?scroll=bottom';
+                        }
+                    }
+                },
+                
+                async markAllAsRead() {
+                    try {
+                        const response = await fetch('{{ route("notifications.mark-all-read") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            this.notifications.forEach(notification => {
+                                notification.read_at = new Date().toISOString();
+                            });
+                            this.unreadCount = 0;
+                            // Update global count
+                            window.updateNotificationCount(0);
+                        }
+                    } catch (error) {
+                        console.error('Error marking all notifications as read:', error);
+                    }
+                }
+            }
+        }
+        
+        // Lead Management Functions
+        function loadTodaysFollowups() {
             window.location.href = "{{ route('followups.today') }}";
         }
 
         function loadOverdueFollowups() {
             window.location.href = "{{ route('followups.overdue') }}";
         }
+        
+        // Global notification functions
+        window.toggleNotificationDropdown = function() {
+            if (window.notificationDropdown) {
+                window.notificationDropdown.toggleDropdown();
+            } else {
+                // Try to find and trigger the dropdown directly
+                const dropdown = document.querySelector('#global-notification-dropdown');
+                if (dropdown && dropdown.__x) {
+                    dropdown.__x.toggleDropdown();
+                }
+            }
+        };
+        
+        // Update global unread count
+        window.updateNotificationCount = function(count) {
+            window.notificationUnreadCount = count;
+            // Update Alpine.js store
+            if (Alpine && Alpine.store) {
+                Alpine.store('notifications').unreadCount = count;
+            }
+        };
     </script>
+    
+    <!-- Global Notification Dropdown (Outside of all containers) -->
+    <div id="global-notification-dropdown" 
+         x-data="notificationDropdown()" 
+         x-show="open" 
+         x-cloak
+         @click.away="open = false" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 transform scale-95"
+         x-transition:enter-end="opacity-100 transform scale-100"
+         x-transition:leave="transition ease-in duration-75"
+         x-transition:leave-start="opacity-100 transform scale-100"
+         x-transition:leave-end="opacity-0 transform scale-95"
+         class="notification-dropdown-panel w-96 rounded-xl shadow-xl ring-1 ring-black/5"
+         style="position: fixed !important; top: 70px !important; right: 20px !important; z-index: 2147483647 !important;">
+        <div class="p-4" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 0.75rem;">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
+                <button @click="markAllAsRead()" 
+                        x-show="unreadCount > 0"
+                        class="text-xs text-blue-600 hover:text-blue-800 transition-colors">
+                    Mark all read
+                </button>
+            </div>
+            
+            <div x-show="loading" class="flex items-center justify-center py-8">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+            </div>
+            
+            <div x-show="!loading && notifications.length === 0" class="text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5-5V9a4 4 0 00-8 0v3L2 17h5m8 0v1a3 3 0 01-6 0v-1m6 0H9"></path>
+                </svg>
+                <p class="text-sm">No notifications</p>
+            </div>
+            
+            <div x-show="!loading" class="space-y-2 max-h-96 overflow-y-auto">
+                <template x-for="notification in notifications" :key="notification.id">
+                    <div class="flex items-start space-x-3 p-3 rounded-lg hover:bg-white/50 transition-colors cursor-pointer"
+                         @click="markAsReadAndRedirect(notification)"
+                         :class="notification.read_at ? 'opacity-75' : 'bg-blue-50/50'">
+                        <div class="flex-shrink-0">
+                            <div class="w-2 h-2 rounded-full mt-2"
+                                 :class="notification.read_at ? 'bg-gray-400' : 'bg-blue-500'"></div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900" x-text="notification.title"></p>
+                            <p class="text-xs text-gray-600 mt-1" x-text="notification.message"></p>
+                            <div class="flex items-center justify-between mt-2">
+                                <span class="text-xs text-gray-500" x-text="notification.time_ago"></span>
+                                <span x-show="notification.lead_ref_no" 
+                                      class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded" 
+                                      x-text="notification.lead_ref_no"></span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            
+            <div x-show="notifications.length > 0" class="border-t pt-3 mt-3">
+                <a href="{{ route('notifications.index') }}" 
+                   class="block text-center text-sm text-blue-600 hover:text-blue-800 transition-colors">
+                    View all notifications
+                </a>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

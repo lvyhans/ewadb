@@ -25,6 +25,21 @@ Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
 });
 
+// Public Lead Revert API Routes (with token authentication)
+Route::prefix('external/lead-reverts')->middleware('auth:sanctum')->group(function () {
+    // Submit a new revert/remark
+    Route::post('/submit', [\App\Http\Controllers\Api\LeadRevertApiController::class, 'submitRevert']);
+    
+    // Bulk submit multiple reverts
+    Route::post('/bulk-submit', [\App\Http\Controllers\Api\LeadRevertApiController::class, 'bulkSubmitReverts']);
+    
+    // Get all reverts for a lead by reference number
+    Route::get('/lead/{refNo}', [\App\Http\Controllers\Api\LeadRevertApiController::class, 'getRevertsByRefNo']);
+    
+    // Get status of a specific revert
+    Route::get('/status/{revertId}', [\App\Http\Controllers\Api\LeadRevertApiController::class, 'getRevertStatus']);
+});
+
 // Protected routes that require authentication
 Route::middleware('auth:sanctum')->group(function () {
     // Authentication routes
@@ -120,6 +135,23 @@ Route::middleware('auth:sanctum')->group(function () {
     // Application API routes
     Route::prefix('applications')->group(function () {
         Route::post('/get-lead-data', [ApplicationController::class, 'getLeadData']);
+    });
+
+    // Lead Revert Management API Routes (Internal)
+    Route::prefix('lead-reverts')->group(function () {
+        // Get all reverts for a specific lead
+        Route::get('/lead/{leadId}', [\App\Http\Controllers\LeadRevertController::class, 'index']);
+        
+        // Get all active reverts (for dashboard)
+        Route::get('/active', [\App\Http\Controllers\LeadRevertController::class, 'getAllActiveReverts']);
+        
+        // Revert management actions
+        Route::post('/{revertId}/resolve', [\App\Http\Controllers\LeadRevertController::class, 'resolve']);
+        Route::post('/{revertId}/reopen', [\App\Http\Controllers\LeadRevertController::class, 'reopen']);
+        Route::post('/{revertId}/archive', [\App\Http\Controllers\LeadRevertController::class, 'archive']);
+        
+        // Statistics
+        Route::get('/statistics', [\App\Http\Controllers\LeadRevertController::class, 'getStatistics']);
     });
 });
 
