@@ -113,22 +113,30 @@
                             <label class="block text-sm font-medium text-gray-700">
                                 Country <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" name="country" id="country" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" placeholder="Enter preferred country" required>
+                            <select name="country" id="country" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" required>
+                                <option value="">Select a country</option>
+                            </select>
                         </div>
                         
                         <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700">Preferred Province/City</label>
-                            <input type="text" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" id="state" name="city" placeholder="Enter preferred city/province">
+                            <select class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" id="state" name="city" disabled>
+                                <option value="">Select a city/province</option>
+                            </select>
                         </div>
                         
                         <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700">Preferred College</label>
-                            <input type="text" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" id="college" name="college" placeholder="Enter preferred college">
+                            <select class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" id="college" name="college" disabled>
+                                <option value="">Select a college</option>
+                            </select>
                         </div>
                         
                         <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700">Preferred Course</label>
-                            <input type="text" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="course" placeholder="Enter course name">
+                            <select class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="course" id="course" disabled>
+                                <option value="">Select a course</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -580,6 +588,9 @@ console.log('Employment count initialized:', employmentCount);
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Form JavaScript initialized');
     console.log('Current employment count:', employmentCount);
+    
+    // Initialize cascading dropdowns
+    initializeCascadingDropdowns();
     
     // Check for multiple course selection from course finder
     const urlParams = new URLSearchParams(window.location.search);
@@ -1201,8 +1212,11 @@ function fillFormWithLeadData(leadData, employmentHistory) {
             'remarks': leadData.remarks
         };
         
-        // Fill form fields
+        // Fill form fields (excluding dropdown fields that need special handling)
+        const dropdownFields = ['country', 'city', 'college', 'course'];
         Object.entries(fieldMappings).forEach(([fieldName, value]) => {
+            if (dropdownFields.includes(fieldName)) return; // Skip dropdown fields for now
+            
             const field = document.querySelector(`[name="${fieldName}"]`);
             if (field && value !== null && value !== undefined && value !== '') {
                 field.value = value;
@@ -1212,6 +1226,11 @@ function fillFormWithLeadData(leadData, employmentHistory) {
                 field.dispatchEvent(new Event('change'));
             }
         });
+        
+        // Handle dropdown fields with cascading logic
+        setTimeout(() => {
+            handleDropdownAutoFill(leadData);
+        }, 500); // Allow time for countries to load
         
         // Handle English proficiency scores
         if (leadData.score_type) {
@@ -1287,6 +1306,58 @@ function fillFormWithLeadData(leadData, employmentHistory) {
     } catch (error) {
         console.error('Error filling form with lead data:', error);
         showAlert('Error filling form: ' + error.message, 'error');
+    }
+}
+
+// Handle dropdown auto-fill with cascading logic
+function handleDropdownAutoFill(leadData) {
+    console.log('Handling dropdown auto-fill:', leadData);
+    
+    const countrySelect = document.getElementById('country');
+    const citySelect = document.getElementById('state');
+    const collegeSelect = document.getElementById('college');
+    const courseSelect = document.getElementById('course');
+    
+    // Auto-fill country first
+    if (leadData.country && countrySelect) {
+        if (setDropdownValue(countrySelect, leadData.country)) {
+            console.log('Country set successfully:', leadData.country);
+            
+            // Wait for cities to load, then set city
+            if (leadData.city) {
+                setTimeout(() => {
+                    if (setDropdownValue(citySelect, leadData.city)) {
+                        console.log('City set successfully:', leadData.city);
+                        
+                        // Wait for colleges to load, then set college
+                        if (leadData.college) {
+                            setTimeout(() => {
+                                if (setDropdownValue(collegeSelect, leadData.college)) {
+                                    console.log('College set successfully:', leadData.college);
+                                    
+                                    // Wait for courses to load, then set course
+                                    if (leadData.course) {
+                                        setTimeout(() => {
+                                            if (setDropdownValue(courseSelect, leadData.course)) {
+                                                console.log('Course set successfully:', leadData.course);
+                                            } else {
+                                                console.log('Course not found in dropdown:', leadData.course);
+                                            }
+                                        }, 1500);
+                                    }
+                                } else {
+                                    console.log('College not found in dropdown:', leadData.college);
+                                }
+                            }, 1500);
+                        }
+                    } else {
+                        console.log('City not found in dropdown:', leadData.city);
+                    }
+                }, 1500);
+            }
+        } else {
+            console.log('Country not found in dropdown:', leadData.country);
+        }
     }
 }
 function fillEmploymentRow(index, employment) {
@@ -1376,7 +1447,7 @@ function addEmploymentRowWithData(employment, index) {
 
 // Document Checklist Functionality
 function loadDocumentChecklist() {
-    const country = document.querySelector('input[name="country"]')?.value;
+    const country = document.getElementById('country')?.value;
     const qualification = document.querySelector('select[name="last_qual"]')?.value;
     
     console.log('Loading document checklist for:', { country, qualification });
@@ -1804,6 +1875,246 @@ function hideMultipleCourseBanner() {
     if (banner) {
         banner.classList.add('hidden');
     }
+}
+
+// Cascading Dropdown Functions
+function initializeCascadingDropdowns() {
+    console.log('Initializing cascading dropdowns');
+    
+    // Load countries on page load
+    loadCountries();
+    
+    // Set up event listeners for cascading dropdowns
+    const countrySelect = document.getElementById('country');
+    const citySelect = document.getElementById('state');
+    const collegeSelect = document.getElementById('college');
+    const courseSelect = document.getElementById('course');
+    const qualificationSelect = document.querySelector('select[name="last_qual"]');
+    
+    if (countrySelect) {
+        countrySelect.addEventListener('change', function() {
+            const selectedCountry = this.value;
+            console.log('Country changed to:', selectedCountry);
+            
+            // Reset dependent dropdowns
+            resetDropdown(citySelect, 'Select a city/province');
+            resetDropdown(collegeSelect, 'Select a college');
+            resetDropdown(courseSelect, 'Select a course');
+            
+            if (selectedCountry) {
+                loadCities(selectedCountry);
+                citySelect.disabled = false;
+            } else {
+                citySelect.disabled = true;
+                collegeSelect.disabled = true;
+                courseSelect.disabled = true;
+            }
+            
+            // Trigger document checklist update
+            loadDocumentChecklist();
+        });
+    }
+    
+    if (citySelect) {
+        citySelect.addEventListener('change', function() {
+            const selectedCity = this.value;
+            const selectedCountry = countrySelect.value;
+            console.log('City changed to:', selectedCity);
+            
+            // Reset dependent dropdowns
+            resetDropdown(collegeSelect, 'Select a college');
+            resetDropdown(courseSelect, 'Select a course');
+            
+            if (selectedCity && selectedCountry) {
+                loadColleges(selectedCountry, selectedCity);
+                collegeSelect.disabled = false;
+            } else {
+                collegeSelect.disabled = true;
+                courseSelect.disabled = true;
+            }
+        });
+    }
+    
+    if (collegeSelect) {
+        collegeSelect.addEventListener('change', function() {
+            const selectedCollege = this.value;
+            const selectedCountry = countrySelect.value;
+            const selectedCity = citySelect.value;
+            console.log('College changed to:', selectedCollege);
+            
+            // Reset dependent dropdown
+            resetDropdown(courseSelect, 'Select a course');
+            
+            if (selectedCollege && selectedCountry && selectedCity) {
+                loadCourses(selectedCountry, selectedCity, selectedCollege);
+                courseSelect.disabled = false;
+            } else {
+                courseSelect.disabled = true;
+            }
+        });
+    }
+    
+    // Trigger document checklist on qualification change
+    if (qualificationSelect) {
+        qualificationSelect.addEventListener('change', function() {
+            console.log('Qualification changed to:', this.value);
+            loadDocumentChecklist();
+        });
+    }
+}
+
+function loadCountries() {
+    console.log('Loading countries...');
+    
+    fetch('/api/dropdown/countries', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Countries loaded:', data);
+        
+        if (Array.isArray(data) && data.length > 0) {
+            populateDropdown(document.getElementById('country'), data, 'country_name', 'country_name', 'Select a country');
+        } else {
+            console.error('Failed to load countries: No data received');
+            showAlert('Failed to load countries', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading countries:', error);
+        showAlert('Error loading countries: ' + error.message, 'error');
+    });
+}
+
+function loadCities(country) {
+    console.log('Loading cities for country:', country);
+    
+    const citySelect = document.getElementById('state');
+    citySelect.innerHTML = '<option value="">Loading cities...</option>';
+    
+    fetch(`/api/dropdown/cities?country=${encodeURIComponent(country)}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Cities loaded:', data);
+        
+        if (Array.isArray(data) && data.length > 0) {
+            populateDropdown(citySelect, data, 'city_name', 'city_name', 'Select a city/province');
+        } else {
+            console.error('Failed to load cities: No data received');
+            resetDropdown(citySelect, 'No cities available');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading cities:', error);
+        resetDropdown(citySelect, 'Error loading cities');
+    });
+}
+
+function loadColleges(country, city) {
+    console.log('Loading colleges for:', { country, city });
+    
+    const collegeSelect = document.getElementById('college');
+    collegeSelect.innerHTML = '<option value="">Loading colleges...</option>';
+    
+    fetch(`/api/dropdown/colleges?country=${encodeURIComponent(country)}&city=${encodeURIComponent(city)}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Colleges loaded:', data);
+        
+        if (Array.isArray(data) && data.length > 0) {
+            populateDropdown(collegeSelect, data, 'college_name', 'college_name', 'Select a college');
+        } else {
+            console.error('Failed to load colleges: No data received');
+            resetDropdown(collegeSelect, 'No colleges available');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading colleges:', error);
+        resetDropdown(collegeSelect, 'Error loading colleges');
+    });
+}
+
+function loadCourses(country, city, college) {
+    console.log('Loading courses for:', { country, city, college });
+    
+    const courseSelect = document.getElementById('course');
+    courseSelect.innerHTML = '<option value="">Loading courses...</option>';
+    
+    fetch(`/api/dropdown/courses?country=${encodeURIComponent(country)}&city=${encodeURIComponent(city)}&college=${encodeURIComponent(college)}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Courses loaded:', data);
+        
+        if (Array.isArray(data) && data.length > 0) {
+            populateDropdown(courseSelect, data, 'course_name', 'course_name', 'Select a course');
+        } else {
+            console.error('Failed to load courses: No data received');
+            resetDropdown(courseSelect, 'No courses available');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading courses:', error);
+        resetDropdown(courseSelect, 'Error loading courses');
+    });
+}
+
+function populateDropdown(selectElement, data, valueField, textField, placeholder) {
+    if (!selectElement) return;
+    
+    selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+    
+    if (Array.isArray(data) && data.length > 0) {
+        data.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item[valueField];
+            option.textContent = item[textField];
+            selectElement.appendChild(option);
+        });
+    }
+}
+
+function resetDropdown(selectElement, placeholder) {
+    if (!selectElement) return;
+    
+    selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+    selectElement.disabled = true;
+}
+
+// Helper function to set dropdown values (for auto-fill functionality)
+function setDropdownValue(selectElement, value) {
+    if (!selectElement || !value) return false;
+    
+    // Check if the option exists
+    const option = Array.from(selectElement.options).find(opt => opt.value === value);
+    if (option) {
+        selectElement.value = value;
+        // Trigger change event to cascade
+        selectElement.dispatchEvent(new Event('change'));
+        return true;
+    }
+    return false;
 }
 </script>
 @endsection
