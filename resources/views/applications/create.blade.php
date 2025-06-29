@@ -596,6 +596,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('from') === 'course-finder' && urlParams.get('multiple') === 'true') {
         handleMultipleCourseSelection();
+    } else if (urlParams.get('from') === 'course-finder') {
+        // Handle single course selection from course finder
+        handleSingleCourseSelection();
     }
     
     // Show reference name field when source is Reference
@@ -1731,12 +1734,26 @@ function handleMultipleCourseSelection() {
                 
                 // Pre-select the common country in the main form
                 if (selectedCoursesData[0].country) {
-                    const countryField = document.querySelector('input[name="country"]');
-                    if (countryField) {
-                        countryField.value = selectedCoursesData[0].country;
-                        countryField.setAttribute('readonly', true);
-                        countryField.style.backgroundColor = '#f3f4f6';
-                    }
+                    setTimeout(() => {
+                        const countryField = document.getElementById('country');
+                        if (countryField) {
+                            // Wait for countries to load first, then set the value
+                            const checkAndSetCountry = () => {
+                                if (countryField.options.length > 1) {
+                                    // Countries are loaded, now set the value
+                                    setDropdownValue(countryField, selectedCoursesData[0].country);
+                                    // Make dropdown readonly to prevent changes
+                                    countryField.disabled = true;
+                                    countryField.style.backgroundColor = '#f3f4f6';
+                                    console.log('Country auto-selected from course finder:', selectedCoursesData[0].country);
+                                } else {
+                                    // Countries not loaded yet, wait a bit more
+                                    setTimeout(checkAndSetCountry, 500);
+                                }
+                            };
+                            checkAndSetCountry();
+                        }
+                    }, 1000); // Wait for dropdown to populate
                 }
                 
                 // Clear localStorage
@@ -1874,6 +1891,73 @@ function hideMultipleCourseBanner() {
     const banner = document.getElementById('multipleCourseBanner');
     if (banner) {
         banner.classList.add('hidden');
+    }
+}
+
+// Handle single course selection from course finder
+function handleSingleCourseSelection() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const country = urlParams.get('country');
+        const city = urlParams.get('city');
+        const college = urlParams.get('college');
+        const course = urlParams.get('course');
+        
+        console.log('Single course selection from course finder:', { country, city, college, course });
+        
+        if (country) {
+            setTimeout(() => {
+                const countryField = document.getElementById('country');
+                if (countryField) {
+                    // Wait for countries to load first, then set the value
+                    const checkAndSetCountry = () => {
+                        if (countryField.options.length > 1) {
+                            // Countries are loaded, now set the value
+                            if (setDropdownValue(countryField, country)) {
+                                console.log('Country auto-selected from course finder:', country);
+                                
+                                // Auto-fill other fields if available
+                                if (city) {
+                                    setTimeout(() => {
+                                        const cityField = document.getElementById('state');
+                                        if (cityField && cityField.options.length > 1) {
+                                            setDropdownValue(cityField, city);
+                                            console.log('City auto-selected:', city);
+                                            
+                                            if (college) {
+                                                setTimeout(() => {
+                                                    const collegeField = document.getElementById('college');
+                                                    if (collegeField && collegeField.options.length > 1) {
+                                                        setDropdownValue(collegeField, college);
+                                                        console.log('College auto-selected:', college);
+                                                        
+                                                        if (course) {
+                                                            setTimeout(() => {
+                                                                const courseField = document.getElementById('course');
+                                                                if (courseField && courseField.options.length > 1) {
+                                                                    setDropdownValue(courseField, course);
+                                                                    console.log('Course auto-selected:', course);
+                                                                }
+                                                            }, 1500);
+                                                        }
+                                                    }
+                                                }, 1500);
+                                            }
+                                        }
+                                    }, 1500);
+                                }
+                            }
+                        } else {
+                            // Countries not loaded yet, wait a bit more
+                            setTimeout(checkAndSetCountry, 500);
+                        }
+                    };
+                    checkAndSetCountry();
+                }
+            }, 1000); // Wait for dropdown to populate
+        }
+    } catch (error) {
+        console.error('Error handling single course selection:', error);
     }
 }
 
