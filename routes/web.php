@@ -21,6 +21,11 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+// Test route for debugging application form
+Route::get('/test-application-form', function () {
+    return view('test_application_form');
+})->middleware('auth')->name('test.application.form');
+
 // Registration Routes (for guest users only)
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');

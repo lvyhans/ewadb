@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Models\ApplicationCourseOption;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationEmployment;
 use App\Models\Lead;
@@ -16,7 +17,7 @@ class ApplicationController extends Controller
 {
     public function index()
     {
-        $applications = Application::with(['creator', 'assignedUser'])
+        $applications = Application::with(['creator', 'assignedUser', 'courseOptions'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -31,21 +32,11 @@ class ApplicationController extends Controller
 
     public function store(Request $request)
     {
-        // Debug: Log the incoming request data
-        \Log::info('=== APPLICATION STORE START ===');
-        \Log::info('Request method: ' . $request->method());
-        \Log::info('Has documents: ' . ($request->has('documents') ? 'YES' : 'NO'));
-        \Log::info('Request data keys: ' . implode(', ', array_keys($request->all())));
-        \Log::info('Files: ' . json_encode($request->allFiles()));
-        
-        if ($request->has('documents')) {
-            \Log::info('Documents structure:', $request->documents);
-        }
-        
         try {
             // Basic validation first - exclude documents for now
             $basicRules = [
                 'name' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
                 'phone' => 'required|string|max:20',
                 'source' => 'required|string',
                 'remarks' => 'required|string',
@@ -82,13 +73,12 @@ class ApplicationController extends Controller
         }
 
         try {
-            \Log::info('Starting database transaction...');
             DB::beginTransaction();
 
             // Map form fields to database fields
             $mappedData = [
                 'application_number' => Application::generateApplicationNumber(),
-                'created_by' => Auth::id(),
+                'created_by' => Auth::id() ?? 1, // Default to user ID 1 if no auth
                 'status' => 'pending',
                 
                 // Personal Details
@@ -139,21 +129,20 @@ class ApplicationController extends Controller
                 'remarks' => $request->remarks,
             ];
             
-            // Remove null values
-            $mappedData = array_filter($mappedData, function($value) {
+            // Remove null values but keep required fields
+            $requiredFields = ['name', 'email', 'phone', 'remarks'];
+            $mappedData = array_filter($mappedData, function($value, $key) use ($requiredFields) {
+                // Keep required fields even if empty (they'll be validated)
+                if (in_array($key, $requiredFields)) {
+                    return true;
+                }
                 return $value !== null && $value !== '';
-            });
+            }, ARRAY_FILTER_USE_BOTH);
             
-            \Log::info('Mapped Application Data:', $mappedData);
-
             $application = Application::create($mappedData);
-            
-            \Log::info('Application Created Successfully:', ['id' => $application->id, 'application_number' => $application->application_number]);
 
             // Create employment history
             if ($request->has('employementhistory') && is_array($request->employementhistory)) {
-                \Log::info('Processing Employment History:', $request->employementhistory);
-                
                 foreach ($request->employementhistory as $index => $employment) {
                     if (!empty($employment['company_name']) || !empty($employment['job_position'])) {
                         $employmentData = [
@@ -166,25 +155,57 @@ class ApplicationController extends Controller
                             'description' => $employment['description'] ?? '',
                         ];
                         
-                        \Log::info('Creating Employment Record #' . $index . ':', $employmentData);
-                        $empRecord = ApplicationEmployment::create($employmentData);
-                        \Log::info('Employment Record Created:', ['id' => $empRecord->id]);
+                        ApplicationEmployment::create($employmentData);
                     }
+                }
+            }
+
+            // Handle course options from course finder (multiple courses)
+            if ($request->has('course_options') && is_array($request->course_options)) {
+                foreach ($request->course_options as $index => $courseOption) {
+                    if (!empty($courseOption['course']) || !empty($courseOption['college'])) {
+                        $courseOptionData = [
+                            'application_id' => $application->id,
+                            'country' => $courseOption['country'] ?? '',
+                            'city' => $courseOption['city'] ?? '',
+                            'college' => $courseOption['college'] ?? '',
+                            'course' => $courseOption['course'] ?? '',
+                            'course_type' => $courseOption['course_type'] ?? '',
+                            'fees' => $courseOption['fees'] ?? '',
+                            'duration' => $courseOption['duration'] ?? '',
+                            'college_detail_id' => $courseOption['college_detail_id'] ?? null,
+                            'is_primary' => $index === 0, // First option is primary
+                            'priority_order' => $index + 1,
+                        ];
+                        
+                        \App\Models\ApplicationCourseOption::create($courseOptionData);
+                    }
+                }
+            } else {
+                // Handle single course selection (traditional form)
+                if ($request->filled(['country', 'college', 'course'])) {
+                    $singleCourseData = [
+                        'application_id' => $application->id,
+                        'country' => $request->country ?? '',
+                        'city' => $request->city ?? '',
+                        'college' => $request->college ?? '',
+                        'course' => $request->course ?? '',
+                        'course_type' => '', // Not available in traditional form
+                        'fees' => '', // Not available in traditional form
+                        'duration' => '', // Not available in traditional form
+                        'college_detail_id' => null,
+                        'is_primary' => true,
+                        'priority_order' => 1,
+                    ];
+                    
+                    \App\Models\ApplicationCourseOption::create($singleCourseData);
                 }
             }
 
             // Handle document uploads (non-blocking - don't fail transaction if documents fail)
             if ($request->has('documents') && is_array($request->documents)) {
-                \Log::info('Processing Document Uploads:', ['count' => count($request->documents)]);
-                
                 foreach ($request->documents as $index => $documentData) {
                     try {
-                        \Log::info("Processing document upload $index:", [
-                            'has_file' => isset($documentData['file']),
-                            'file_valid' => isset($documentData['file']) && is_object($documentData['file']) && $documentData['file']->isValid(),
-                            'document_data_keys' => is_array($documentData) ? array_keys($documentData) : 'not_array'
-                        ]);
-                        
                         if (isset($documentData['file']) && is_object($documentData['file']) && $documentData['file']->isValid()) {
                             $file = $documentData['file'];
                             
@@ -257,7 +278,7 @@ class ApplicationController extends Controller
 
     public function show($id)
     {
-        $application = Application::with(['creator', 'assignedUser', 'employmentHistory', 'documents'])->findOrFail($id);
+        $application = Application::with(['creator', 'assignedUser', 'employmentHistory', 'documents', 'courseOptions'])->findOrFail($id);
         return view('applications.show', compact('application'));
     }
 
