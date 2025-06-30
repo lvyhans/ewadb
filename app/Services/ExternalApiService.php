@@ -317,8 +317,8 @@ class ExternalApiService
      */
     private function prepareApplicationData($application): array
     {
-        // Load relationships including documents
-        $application->load(['employmentHistory', 'creator', 'documents']);
+        // Load relationships including documents, course options, and admin details
+        $application->load(['employmentHistory', 'creator.roles', 'creator.admin.roles', 'documents', 'courseOptions']);
         
         return [
             'type' => 'application',
@@ -350,6 +350,34 @@ class ExternalApiService
             'field_of_study' => $application->field_of_study,
             'intake_year' => $application->intake_year,
             'intake_month' => $application->intake_month,
+            
+            // Course options from course finder
+            'course_options' => $application->courseOptions->map(function ($courseOption) {
+                return [
+                    'country' => $courseOption->country,
+                    'city' => $courseOption->city,
+                    'college' => $courseOption->college,
+                    'course' => $courseOption->course,
+                    'course_type' => $courseOption->course_type,
+                    'fees' => $courseOption->fees,
+                    'duration' => $courseOption->duration,
+                    'college_detail_id' => $courseOption->college_detail_id,
+                    'is_primary' => $courseOption->is_primary,
+                    'priority_order' => $courseOption->priority_order,
+                ];
+            })->toArray(),
+            
+            // Course options summary
+            'course_options_summary' => [
+                'total_count' => $application->courseOptions->count(),
+                'primary_course' => $application->courseOptions->where('is_primary', true)->first() ? [
+                    'course' => $application->courseOptions->where('is_primary', true)->first()->course,
+                    'college' => $application->courseOptions->where('is_primary', true)->first()->college,
+                    'country' => $application->courseOptions->where('is_primary', true)->first()->country,
+                ] : null,
+                'countries' => $application->courseOptions->pluck('country')->unique()->values()->toArray(),
+                'colleges' => $application->courseOptions->pluck('college')->unique()->values()->toArray(),
+            ],
             
             // English proficiency
             'english_proficiency' => $application->english_proficiency,
@@ -429,9 +457,71 @@ class ExternalApiService
                 'id' => $application->creator->id,
                 'name' => $application->creator->name,
                 'email' => $application->creator->email,
-                'company' => $application->creator->company ?? null,
-                'role' => $application->creator->role ?? null,
-                'department' => $application->creator->department ?? null,
+                'phone' => $application->creator->phone ?? null,
+                'city' => $application->creator->city ?? null,
+                'state' => $application->creator->state ?? null,
+                'zip' => $application->creator->zip ?? null,
+                'company_name' => $application->creator->company_name ?? null,
+                'company_registration_number' => $application->creator->company_registration_number ?? null,
+                'gstin' => $application->creator->gstin ?? null,
+                'pan_number' => $application->creator->pan_number ?? null,
+                'company_address' => $application->creator->company_address ?? null,
+                'company_city' => $application->creator->company_city ?? null,
+                'company_state' => $application->creator->company_state ?? null,
+                'company_pincode' => $application->creator->company_pincode ?? null,
+                'company_phone' => $application->creator->company_phone ?? null,
+                'company_email' => $application->creator->company_email ?? null,
+                'approval_status' => $application->creator->approval_status ?? null,
+                'approved_at' => $application->creator->approved_at ? $application->creator->approved_at->toISOString() : null,
+                'admin_group_name' => $application->creator->admin_group_name ?? null,
+                'admin_id' => $application->creator->admin_id ?? null, // Admin ID if user is a member
+                'roles' => $application->creator->role_names ?? [],
+                'primary_role' => $application->creator->role ?? 'member',
+                'is_super_admin' => $application->creator->isSuperAdmin(),
+                'is_regular_admin' => $application->creator->isRegularAdmin(),
+                'user_type' => $application->creator->hasRole('admin') ? 'admin' : 'member',
+            ],
+            
+            // Admin details (if user is a member under an admin)
+            'admin_details' => $application->creator->admin ? [
+                'id' => $application->creator->admin->id,
+                'name' => $application->creator->admin->name,
+                'email' => $application->creator->admin->email,
+                'phone' => $application->creator->admin->phone ?? null,
+                'company_name' => $application->creator->admin->company_name ?? null,
+                'company_registration_number' => $application->creator->admin->company_registration_number ?? null,
+                'gstin' => $application->creator->admin->gstin ?? null,
+                'pan_number' => $application->creator->admin->pan_number ?? null,
+                'company_address' => $application->creator->admin->company_address ?? null,
+                'company_city' => $application->creator->admin->company_city ?? null,
+                'company_state' => $application->creator->admin->company_state ?? null,
+                'company_pincode' => $application->creator->admin->company_pincode ?? null,
+                'company_phone' => $application->creator->admin->company_phone ?? null,
+                'company_email' => $application->creator->admin->company_email ?? null,
+                'approval_status' => $application->creator->admin->approval_status ?? null,
+                'approved_at' => $application->creator->admin->approved_at ? $application->creator->admin->approved_at->toISOString() : null,
+                'admin_group_name' => $application->creator->admin->admin_group_name ?? null,
+                'is_super_admin' => $application->creator->admin->isSuperAdmin(),
+                'total_members' => $application->creator->admin->members()->count(),
+                'active_members' => $application->creator->admin->members()->where('approval_status', 'approved')->count(),
+            ] : null,
+            
+            // Organization/Company hierarchy info
+            'organization_info' => [
+                'company_name' => $application->creator->admin ? 
+                    $application->creator->admin->company_name : 
+                    $application->creator->company_name,
+                'company_registration_number' => $application->creator->admin ? 
+                    $application->creator->admin->company_registration_number : 
+                    $application->creator->company_registration_number,
+                'gstin' => $application->creator->admin ? 
+                    $application->creator->admin->gstin : 
+                    $application->creator->gstin,
+                'admin_group_name' => $application->creator->admin_group_name ?? 
+                    ($application->creator->admin ? $application->creator->admin->admin_group_name : null),
+                'hierarchy_level' => $application->creator->hasRole('admin') ? 'admin' : 'member',
+                'is_independent_admin' => $application->creator->hasRole('admin') && !$application->creator->admin,
+                'under_admin' => $application->creator->admin ? true : false,
             ],
             
             // Metadata
