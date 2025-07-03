@@ -205,10 +205,8 @@
                         </div>
                         
                         <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">
-                                Email Address <span class="text-red-500">*</span>
-                            </label>
-                            <input type="email" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="email" placeholder="Enter email address" required>
+                            <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                            <input type="email" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="email" placeholder="Enter email address">
                         </div>
                         
                         <div class="space-y-2">
@@ -682,13 +680,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Form submitted');
             
             const formData = new FormData(this);
-            
-            // Debug: Log form data
-            console.log('Form data being submitted:');
-            for (let pair of formData.entries()) {
-                console.log(pair[0] + ': ' + pair[1]);
-            }
-            
             const submitBtn = document.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             
@@ -733,23 +724,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         }, 1500);
                     }
                 } else {
-                    return response.text().then(text => {
-                        console.error('Error response:', text);
-                        try {
-                            const data = JSON.parse(text);
-                            throw new Error(data.message || 'An error occurred');
-                        } catch (e) {
-                            throw new Error('Server error: ' + response.status);
-                        }
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'An error occurred');
                     });
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                console.error('Error details:', {
-                    message: error.message,
-                    stack: error.stack
-                });
                 showAlert('Error creating application: ' + error.message, 'error');
             })
             .finally(() => {
@@ -1761,10 +1742,9 @@ function handleMultipleCourseSelection() {
                                 if (countryField.options.length > 1) {
                                     // Countries are loaded, now set the value
                                     setDropdownValue(countryField, selectedCoursesData[0].country);
-                                    // Make dropdown readonly to prevent changes but don't disable it
-                                    // because disabled fields don't get submitted
+                                    // Make dropdown readonly to prevent changes
+                                    countryField.disabled = true;
                                     countryField.style.backgroundColor = '#f3f4f6';
-                                    countryField.style.pointerEvents = 'none';
                                     console.log('Country auto-selected from course finder:', selectedCoursesData[0].country);
                                 } else {
                                     // Countries not loaded yet, wait a bit more
