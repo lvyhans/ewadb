@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Models\ApplicationCourseOption;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationEmployment;
 use App\Models\Lead;
@@ -11,16 +12,171 @@ use App\Services\ExternalApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ApplicationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $applications = Application::with(['creator', 'assignedUser'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        try {
+            // Get pagination parameters
+            $page = $request->get('page', 1);
+            $entries = $request->get('entries', 20); // Default to 20 entries
+            
+            // Validate entries parameter
+            $allowedEntries = [5, 20, 100, 250, 500];
+            if (!in_array($entries, $allowedEntries)) {
+                $entries = 20; // Default fallback
+            }
+            
+            $limit = $entries;
+            
+            // API endpoint
+            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application';
+            
+            // Request payload - dynamically set based on user role
+            $payload = $this->buildApiPayload([
+                'limit' => $limit,
+                'page' => $page
+            ]);
+            
+            // Make API call
+            $response = $this->makeApiCall($apiUrl, $payload);
+            
+            if ($response['status'] === 'success') {
+                $apiData = $response;
+                $applications = collect($apiData['data']);
+                
+                // Create pagination-like object for view compatibility
+                $paginationData = (object) [
+                    'data' => $applications,
+                    'total' => $apiData['total_count'],
+                    'per_page' => $apiData['limit'],
+                    'current_page' => $apiData['page'],
+                    'last_page' => $apiData['total_pages'],
+                    'from' => (($apiData['page'] - 1) * $apiData['limit']) + 1,
+                    'to' => min($apiData['page'] * $apiData['limit'], $apiData['total_count'])
+                ];
+                
+                return view('applications.index', compact('applications', 'paginationData', 'apiData', 'entries'));
+            } else {
+                throw new \Exception('API request failed');
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching applications from API', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'url' => $apiUrl,
+                'payload' => $payload
+            ]);
+            
+            // Fallback to local database if API fails
+            $applications = Application::with(['creator', 'assignedUser', 'documents'])
+                ->orderBy('created_at', 'desc')
+                ->paginate($entries);
+                
+            $paginationData = null;
+            $apiData = null;
+            
+            return view('applications.index', compact('applications', 'paginationData', 'apiData', 'entries'))
+                ->with('warning', 'API temporarily unavailable. Showing local data instead.');
+        }
+    }
+    
+    /**
+     * Build API payload with proper user credentials based on role
+     */
+    private function buildApiPayload($additionalParams = [])
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            throw new \Exception('User not authenticated');
+        }
+        
+        $payload = [];
+        
+        if ($user->hasRole('admin')) {
+            // If user is admin, send their ID as b2b_admin_id
+            $payload['b2b_admin_id'] = $user->id;
+            
+            Log::info('Building API payload for admin user', [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'b2b_admin_id' => $user->id
+            ]);
+        } else {
+            // If user is member, send both member ID and admin ID
+            $payload['b2b_member_id'] = $user->id;
+            
+            // Get the admin ID for this member
+            if ($user->admin_id) {
+                $payload['b2b_admin_id'] = $user->admin_id;
+            } else {
+                // If no admin_id is set, try to find the admin relationship
+                if ($user->admin) {
+                    $payload['b2b_admin_id'] = $user->admin->id;
+                } else {
+                    throw new \Exception('Member user does not have an associated admin');
+                }
+            }
+            
+            Log::info('Building API payload for member user', [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'b2b_member_id' => $user->id,
+                'b2b_admin_id' => $payload['b2b_admin_id']
+            ]);
+        }
+        
+        // Merge additional parameters
+        $finalPayload = array_merge($payload, $additionalParams);
+        
+        Log::info('Final API payload built', [
+            'payload' => $finalPayload
+        ]);
+        
+        return $finalPayload;
+    }
 
-        return view('applications.index', compact('applications'));
+    private function makeApiCall($url, $payload)
+    {
+        $ch = curl_init();
+        
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+            ],
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+        
+        if ($error) {
+            throw new \Exception('cURL Error: ' . $error);
+        }
+        
+        if ($httpCode !== 200) {
+            throw new \Exception('HTTP Error: ' . $httpCode);
+        }
+        
+        $decodedResponse = json_decode($response, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception('JSON Decode Error: ' . json_last_error_msg());
+        }
+        
+        return $decodedResponse;
     }
 
     public function create()
@@ -35,8 +191,21 @@ class ApplicationController extends Controller
         \Log::info('=== APPLICATION STORE START ===');
         \Log::info('Request method: ' . $request->method());
         \Log::info('Has documents: ' . ($request->has('documents') ? 'YES' : 'NO'));
+        \Log::info('Has course_options: ' . ($request->has('course_options') ? 'YES' : 'NO'));
         \Log::info('Request data keys: ' . implode(', ', array_keys($request->all())));
         \Log::info('Files: ' . json_encode($request->allFiles()));
+        
+        // Specific logging for course options
+        if ($request->has('course_options')) {
+            \Log::info('Course options found in request:', [
+                'is_array' => is_array($request->course_options),
+                'count' => is_array($request->course_options) ? count($request->course_options) : 0,
+                'course_options_data' => $request->course_options
+            ]);
+        } else {
+            \Log::warning('No course_options found in request - this might be the issue');
+            \Log::info('Available request keys:', array_keys($request->all()));
+        }
         
         if ($request->has('documents')) {
             \Log::info('Documents structure:', $request->documents);
@@ -46,7 +215,7 @@ class ApplicationController extends Controller
             // Basic validation first - exclude documents for now
             $basicRules = [
                 'name' => 'required|string|max:255',
-                'phone' => 'required|string|max:20',
+                'phone' => 'required|numeric|digits:10',
                 'source' => 'required|string',
                 'remarks' => 'required|string',
             ];
@@ -133,7 +302,25 @@ class ApplicationController extends Controller
                 // English Proficiency - Map form values to valid ENUM values
                 'english_proficiency' => $this->mapEnglishProficiency($request->score_type),
                 'ielts_score' => $request->ielts_overall,
+                'ielts_listening' => $request->ielts_listening,
+                'ielts_reading' => $request->ielts_reading,
+                'ielts_writing' => $request->ielts_writing,
+                'ielts_speaking' => $request->ielts_speaking,
+                'toefl_score' => $request->toefl_overall,
+                'toefl_listening' => $request->toefl_listening,
+                'toefl_reading' => $request->toefl_reading,
+                'toefl_writing' => $request->toefl_writing,
+                'toefl_speaking' => $request->toefl_speaking,
                 'pte_score' => $request->pte_overall,
+                'pte_listening' => $request->pte_listening,
+                'pte_reading' => $request->pte_reading,
+                'pte_writing' => $request->pte_writing,
+                'pte_speaking' => $request->pte_speaking,
+                'duolingo_overall' => $request->duolingo_overall,
+                'duolingo_listening' => $request->duolingo_listening,
+                'duolingo_reading' => $request->duolingo_reading,
+                'duolingo_writing' => $request->duolingo_writing,
+                'duolingo_speaking' => $request->duolingo_speaking,
                 
                 // Additional Information
                 'remarks' => $request->remarks,
@@ -170,6 +357,76 @@ class ApplicationController extends Controller
                         $empRecord = ApplicationEmployment::create($employmentData);
                         \Log::info('Employment Record Created:', ['id' => $empRecord->id]);
                     }
+                }
+            }
+
+            // Process course options from course finder or create single option from main form
+            if ($request->has('course_options') && is_array($request->course_options)) {
+                \Log::info('Processing Course Options from Course Finder:', $request->course_options);
+                
+                foreach ($request->course_options as $index => $courseOption) {
+                    $courseData = [
+                        'application_id' => $application->id,
+                        'country' => $courseOption['country'] ?? '',
+                        'city' => $courseOption['city'] ?? '',
+                        'college' => $courseOption['college'] ?? '',
+                        'course' => $courseOption['course'] ?? '',
+                        'course_type' => null, // Not collected from course finder
+                        'fees' => null, // Not collected from course finder
+                        'duration' => null, // Not collected from course finder
+                        'intake_year' => $courseOption['intake_year'] ?? '',
+                        'intake_month' => $courseOption['intake_month'] ?? '',
+                        'college_detail_id' => $courseOption['college_detail_id'] ?? '',
+                        'is_primary' => $index === 0, // First option is primary
+                        'priority_order' => $index + 1,
+                    ];
+                    
+                    \Log::info('Creating Course Option #' . ($index + 1) . ':', $courseData);
+                    $courseRecord = ApplicationCourseOption::create($courseData);
+                    \Log::info('Course Option Created:', ['id' => $courseRecord->id]);
+                }
+            } else {
+                \Log::warning('No course_options array found in request');
+                \Log::info('Checking for traditional form course fields...');
+                
+                // Create single course option from main form fields (traditional flow)
+                if ($request->country || $request->college || $request->course) {
+                    \Log::info('Creating Single Course Option from Main Form');
+                    \Log::info('Traditional form course data:', [
+                        'country' => $request->country,
+                        'city' => $request->city,
+                        'college' => $request->college,
+                        'course' => $request->course,
+                        'intake_year' => $request->intake_year,
+                        'intake_month' => $request->intake_month,
+                    ]);
+                    
+                    $singleCourseData = [
+                        'application_id' => $application->id,
+                        'country' => $request->country ?? '',
+                        'city' => $request->city ?? '',
+                        'college' => $request->college ?? '',
+                        'course' => $request->course ?? '',
+                        'course_type' => null,
+                        'fees' => null,
+                        'duration' => null,
+                        'intake_year' => $request->intake_year ?? '',
+                        'intake_month' => $request->intake_month ?? '',
+                        'college_detail_id' => null,
+                        'is_primary' => true,
+                        'priority_order' => 1,
+                    ];
+                    
+                    \Log::info('Creating Single Course Option:', $singleCourseData);
+                    $courseRecord = ApplicationCourseOption::create($singleCourseData);
+                    \Log::info('Single Course Option Created:', ['id' => $courseRecord->id]);
+                } else {
+                    \Log::warning('No course data found in request - neither course_options array nor traditional form fields');
+                    \Log::info('Traditional form fields check:', [
+                        'country' => $request->country ?? 'NULL',
+                        'college' => $request->college ?? 'NULL', 
+                        'course' => $request->course ?? 'NULL'
+                    ]);
                 }
             }
 
@@ -236,7 +493,15 @@ class ApplicationController extends Controller
             // Send application data to external API (non-blocking)
             try {
                 $externalApiService = new ExternalApiService();
-                $externalApiService->sendApplication($application);
+                
+                // Additional form data that should not be stored in database but sent to API
+                $additionalApiData = [
+                    'gender' => $request->gender,
+                    'passport_no' => $request->passport_no,
+                    'marital_status' => $request->marital_status,
+                ];
+                
+                $externalApiService->sendApplication($application, $additionalApiData);
             } catch (\Exception $e) {
                 // Log the error but don't fail the application creation
                 \Log::error('Failed to send application to external API', [
@@ -257,7 +522,7 @@ class ApplicationController extends Controller
 
     public function show($id)
     {
-        $application = Application::with(['creator', 'assignedUser', 'employmentHistory', 'documents'])->findOrFail($id);
+        $application = Application::with(['creator', 'assignedUser', 'employmentHistory', 'documents', 'courseOptions'])->findOrFail($id);
         return view('applications.show', compact('application'));
     }
 
@@ -268,11 +533,125 @@ class ApplicationController extends Controller
         try {
             $application = Application::findOrFail($id);
             $application->delete();
-
+            
             return redirect()->route('applications.index')
-                ->with('success', 'Application deleted successfully!');
+                ->with('success', 'Application deleted successfully');
         } catch (\Exception $e) {
-            return back()->with('error', 'Error deleting application: ' . $e->getMessage());
+            return redirect()->route('applications.index')
+                ->with('error', 'Error deleting application: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get documents for a specific application (AJAX endpoint)
+     */
+    public function getDocuments($id)
+    {
+        try {
+            $application = Application::findOrFail($id);
+            $documents = $application->documents()->get();
+            
+            return response()->json([
+                'success' => true,
+                'documents' => $documents->map(function ($doc) {
+                    return [
+                        'id' => $doc->id,
+                        'document_name' => $doc->document_name,
+                        'file_path' => $doc->file_path,
+                        'file_size' => $doc->file_size,
+                        'is_mandatory' => $doc->is_mandatory,
+                        'created_at' => $doc->created_at,
+                        'updated_at' => $doc->updated_at,
+                    ];
+                })
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching documents: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * View a specific document
+     */
+    public function viewDocument($id)
+    {
+        try {
+            $document = ApplicationDocument::findOrFail($id);
+            $filePath = storage_path('app/public/' . $document->file_path);
+            
+            if (!file_exists($filePath)) {
+                abort(404, 'Document not found');
+            }
+            
+            return response()->file($filePath);
+        } catch (\Exception $e) {
+            abort(404, 'Document not found');
+        }
+    }
+
+    /**
+     * Download a specific document
+     */
+    public function downloadDocument($id)
+    {
+        try {
+            $document = ApplicationDocument::findOrFail($id);
+            $filePath = storage_path('app/public/' . $document->file_path);
+            
+            if (!file_exists($filePath)) {
+                abort(404, 'Document not found');
+            }
+            
+            return response()->download($filePath, $document->document_name);
+        } catch (\Exception $e) {
+            abort(404, 'Document not found');
+        }
+    }
+
+    /**
+     * Download all documents for an application as a ZIP file
+     */
+    public function downloadAllDocuments($id)
+    {
+        try {
+            $application = Application::findOrFail($id);
+            $documents = $application->documents()->get();
+            
+            if ($documents->isEmpty()) {
+                return redirect()->back()->with('error', 'No documents found for this application');
+            }
+            
+            // Create a temporary ZIP file
+            $zipFileName = 'application_' . $application->application_number . '_documents.zip';
+            $zipPath = storage_path('app/temp/' . $zipFileName);
+            
+            // Create temp directory if it doesn't exist
+            if (!file_exists(storage_path('app/temp'))) {
+                mkdir(storage_path('app/temp'), 0755, true);
+            }
+            
+            $zip = new \ZipArchive();
+            if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== TRUE) {
+                return redirect()->back()->with('error', 'Could not create ZIP file');
+            }
+            
+            foreach ($documents as $document) {
+                $filePath = storage_path('app/public/' . $document->file_path);
+                if (file_exists($filePath)) {
+                    $zip->addFile($filePath, $document->document_name);
+                }
+            }
+            
+            $zip->close();
+            
+            // Return the ZIP file as a download and delete it afterward
+            return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error downloading documents: ' . $e->getMessage());
         }
     }
 
@@ -304,6 +683,9 @@ class ApplicationController extends Controller
             'email' => $lead->email,
             'f_city' => $lead->city,         // lead has 'city', form expects 'f_city'
             'address' => $lead->address,
+            'gender' => $lead->gender ?? '',
+            'passport_no' => $lead->passport_no ?? '',
+            'marital_status' => $lead->marital_status ?? '',
             
             // Country & College
             'country' => $lead->preferred_country,  // lead has 'preferred_country', form expects 'country'
@@ -582,7 +964,7 @@ class ApplicationController extends Controller
             // Only basic validation
             $request->validate([
                 'name' => 'required|string|max:255',
-                'phone' => 'required|string|max:20',
+                'phone' => 'required|numeric|digits:10',
                 'source' => 'required|string',
                 'remarks' => 'required|string',
             ]);
@@ -777,6 +1159,554 @@ class ApplicationController extends Controller
                 'error' => 'Failed to fetch courses',
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Format file size for display
+     */
+    public static function formatFileSize($bytes)
+    {
+        if ($bytes === 0) return '0 Bytes';
+        $k = 1024;
+        $sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        $i = floor(log($bytes) / log($k));
+        return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
+    }
+
+    public function showApiApplication($visaFormId)
+    {
+        // Redirect to detailed view - we only want one view with all details
+        return redirect()->route('applications.show-api', $visaFormId);
+    }
+
+    /**
+     * Get detailed application information including admissions and documents
+     */
+    public function getApplicationDetails($visaFormId)
+    {
+        try {
+            // API endpoint for application details
+            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+            
+            // Request payload - dynamically set based on user role
+            $payload = $this->buildApiPayload([
+                'visa_form_id' => $visaFormId
+            ]);
+            
+            $response = $this->makeApiCall($apiUrl, $payload);
+            
+            if ($response['status'] === 'success') {
+                return response()->json([
+                    'success' => true,
+                    'data' => $response
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to fetch application details'
+                ], 404);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching application details from API', [
+                'visa_form_id' => $visaFormId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to fetch application details: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show detailed application view with admissions and documents
+     */
+    public function showApiApplicationDetails($visaFormId)
+    {
+        try {
+            // Get basic application data by filtering the main application endpoint
+            $basicApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application';
+            $basicPayload = $this->buildApiPayload([
+                'visa_form_id' => $visaFormId
+            ]);
+            
+            $basicResponse = $this->makeApiCall($basicApiUrl, $basicPayload);
+            
+            // Get detailed application data (admissions and documents)
+            $detailsApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+            $detailsPayload = $this->buildApiPayload([
+                'visa_form_id' => $visaFormId
+            ]);
+            
+            $detailsResponse = $this->makeApiCall($detailsApiUrl, $detailsPayload);
+            
+            if ($basicResponse['status'] === 'success' && !empty($basicResponse['data']) &&
+                $detailsResponse['status'] === 'success') {
+                
+                // Find the specific application in the response data
+                $application = null;
+                foreach ($basicResponse['data'] as $app) {
+                    if ($app['visa_form_id'] == $visaFormId) {
+                        $application = $app;
+                        break;
+                    }
+                }
+                
+                if (!$application) {
+                    return redirect()->route('applications.index')
+                        ->with('error', 'Application not found in API.');
+                }
+                
+                $details = $detailsResponse;
+                
+                // Fetch journey data for each admission
+                $journeyData = [];
+                if (isset($details['admissions']) && is_array($details['admissions'])) {
+                    foreach ($details['admissions'] as $admission) {
+                        if (isset($admission['admissions_id'])) {
+                            $admissionId = $admission['admissions_id'];
+                            try {
+                                $journey = $this->getJourneyData($admissionId);
+                                if ($journey && isset($journey['status']) && $journey['status'] === 'success') {
+                                    $journeyData[$admissionId] = $journey;
+                                } else {
+                                    Log::warning('Journey API returned unsuccessful status', [
+                                        'admission_id' => $admissionId,
+                                        'response' => $journey
+                                    ]);
+                                }
+                            } catch (\Exception $e) {
+                                Log::warning('Failed to fetch journey data for admission', [
+                                    'admission_id' => $admissionId,
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                        }
+                    }
+                }
+                
+                return view('applications.show-api-details', compact('application', 'details', 'visaFormId', 'journeyData'));
+            } else {
+                return redirect()->route('applications.index')
+                    ->with('error', 'Application not found in API.');
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching detailed application from API', [
+                'visa_form_id' => $visaFormId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('applications.index')
+                ->with('error', 'Unable to fetch application details from API.');
+        }
+    }
+    
+    /**
+     * Debug API endpoints to understand the structure and available data
+     */
+    public function debugApiEndpoints(Request $request)
+    {
+        try {
+            $visaFormId = $request->get('visa_form_id', '388'); // Default test ID
+            
+            Log::info('=== DEBUG API ENDPOINTS ===');
+            
+            // Test 1: Get applications list to see available IDs
+            $listApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application';
+            $listPayload = $this->buildApiPayload([
+                'limit' => 5,
+                'page' => 1
+            ]);
+            
+            Log::info('Testing applications list API', [
+                'url' => $listApiUrl,
+                'payload' => $listPayload
+            ]);
+            
+            $listResponse = $this->makeApiCall($listApiUrl, $listPayload);
+            
+            $availableIds = [];
+            if ($listResponse['status'] === 'success' && !empty($listResponse['data'])) {
+                $availableIds = collect($listResponse['data'])
+                    ->pluck('visa_form_id')
+                    ->take(3)
+                    ->toArray();
+            }
+            
+            Log::info('Available visa form IDs from list', ['ids' => $availableIds]);
+            
+            // Test 2: Try basic application API with first available ID
+            $basicResults = [];
+            if (!empty($availableIds)) {
+                $testId = $availableIds[0];
+                $basicApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application/' . $testId;
+                $basicPayload = $this->buildApiPayload([
+                    'visa_form_id' => $testId
+                ]);
+                
+                Log::info('Testing basic application API', [
+                    'url' => $basicApiUrl,
+                    'payload' => $basicPayload,
+                    'test_id' => $testId
+                ]);
+                
+                try {
+                    $basicResponse = $this->makeApiCall($basicApiUrl, $basicPayload);
+                    $basicResults = [
+                        'status' => 'success',
+                        'response' => $basicResponse,
+                        'test_id' => $testId
+                    ];
+                    Log::info('Basic API call successful', ['test_id' => $testId]);
+                } catch (\Exception $e) {
+                    $basicResults = [
+                        'status' => 'error',
+                        'error' => $e->getMessage(),
+                        'test_id' => $testId
+                    ];
+                    Log::error('Basic API call failed', ['test_id' => $testId, 'error' => $e->getMessage()]);
+                }
+            }
+            
+            // Test 3: Try application_details API with first available ID
+            $detailsResults = [];
+            if (!empty($availableIds)) {
+                $testId = $availableIds[0];
+                $detailsApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+                $detailsPayload = $this->buildApiPayload([
+                    'visa_form_id' => $testId
+                ]);
+                
+                Log::info('Testing application details API', [
+                    'url' => $detailsApiUrl,
+                    'payload' => $detailsPayload,
+                    'test_id' => $testId
+                ]);
+                
+                try {
+                    $detailsResponse = $this->makeApiCall($detailsApiUrl, $detailsPayload);
+                    $detailsResults = [
+                        'status' => 'success',
+                        'response' => $detailsResponse,
+                        'test_id' => $testId
+                    ];
+                    Log::info('Details API call successful', ['test_id' => $testId]);
+                } catch (\Exception $e) {
+                    $detailsResults = [
+                        'status' => 'error',
+                        'error' => $e->getMessage(),
+                        'test_id' => $testId
+                    ];
+                    Log::error('Details API call failed', ['test_id' => $testId, 'error' => $e->getMessage()]);
+                }
+            }
+            
+            return response()->json([
+                'debug_summary' => 'API endpoints testing completed',
+                'available_visa_form_ids' => $availableIds,
+                'tested_id' => $availableIds[0] ?? null,
+                'applications_list' => [
+                    'status' => $listResponse['status'] ?? 'error',
+                    'count' => count($listResponse['data'] ?? [])
+                ],
+                'basic_application_api' => $basicResults,
+                'application_details_api' => $detailsResults,
+                'logs' => 'Check Laravel logs for detailed information'
+            ], 200, [], JSON_PRETTY_PRINT);
+            
+        } catch (\Exception $e) {
+            Log::error('Debug API endpoints failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => 'Debug failed',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Test the API integration - temporary method for debugging
+     */
+    public function testApiIntegration($visaFormId = 388)
+    {
+        try {
+            // Simplified payload for testing without authentication
+            $basicPayload = ['b2b_admin_id' => 1, 'visa_form_id' => $visaFormId];
+            $detailsPayload = ['b2b_admin_id' => 1, 'visa_form_id' => $visaFormId];
+            
+            // Get basic application data by filtering the main application endpoint
+            $basicApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application';
+            $basicResponse = $this->makeApiCall($basicApiUrl, $basicPayload);
+            
+            // Get detailed application data (admissions and documents)
+            $detailsApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+            $detailsResponse = $this->makeApiCall($detailsApiUrl, $detailsPayload);
+            
+            $application = null;
+            if ($basicResponse['status'] === 'success' && !empty($basicResponse['data'])) {
+                foreach ($basicResponse['data'] as $app) {
+                    if ($app['visa_form_id'] == $visaFormId) {
+                        $application = $app;
+                        break;
+                    }
+                }
+            }
+            
+            return response()->json([
+                'basic_api_status' => $basicResponse['status'] ?? 'failed',
+                'basic_api_data_count' => count($basicResponse['data'] ?? []),
+                'application_found' => $application ? true : false,
+                'details_api_status' => $detailsResponse['status'] ?? 'failed',
+                'details_admissions_count' => $detailsResponse['admissions_count'] ?? 0,
+                'details_documents_count' => $detailsResponse['documents_count'] ?? 0,
+                'application_name' => $application['name'] ?? 'Not found',
+                'application_id' => $application['visa_form_id'] ?? 'Not found',
+                'basic_response_keys' => array_keys($basicResponse),
+                'details_response_keys' => array_keys($detailsResponse),
+            ], 200, [], JSON_PRETTY_PRINT);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10)
+            ], 500, [], JSON_PRETTY_PRINT);
+        }
+    }
+
+    /**
+     * Get application journey details for a specific admission
+     */
+    public function getApplicationJourney(Request $request)
+    {
+        try {
+            $applicationId = $request->get('application_id');
+            
+            if (!$applicationId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Application ID is required'
+                ], 400);
+            }
+
+            // API endpoint for application journey
+            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_journey';
+            
+            // Request payload - dynamically set based on user role
+            $payload = $this->buildApiPayload([
+                'application_id' => $applicationId
+            ]);
+            
+            $response = $this->makeApiCall($apiUrl, $payload);
+            
+            if ($response['status'] === 'success') {
+                return response()->json([
+                    'success' => true,
+                    'data' => $response
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to fetch application journey'
+                ], 404);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching application journey from API', [
+                'application_id' => $request->get('application_id'),
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to fetch application journey: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show application journey page for a specific application
+     * This method expects a visa_form_id and will get the correct admissions_id
+     */
+    public function showApplicationJourney($visaFormId)
+    {
+        try {
+            Log::info('Fetching application journey', ['visa_form_id' => $visaFormId]);
+            
+            // Get the admissions for this visa_form_id first
+            $admissionId = $this->getFirstAdmissionId($visaFormId);
+            
+            if (!$admissionId) {
+                return redirect()->route('applications.index')
+                    ->with('error', 'No admissions found for this application. This application may not have any admissions yet.');
+            }
+            
+            Log::info('Found admission ID for journey', ['admission_id' => $admissionId, 'visa_form_id' => $visaFormId]);
+            
+            // Get journey data using the correct admissions_id
+            $journeyData = $this->getJourneyData($admissionId);
+            
+            if (!$journeyData) {
+                return redirect()->route('applications.index')
+                    ->with('error', 'No journey data found for this application.');
+            }
+            
+            // Get application info for context
+            $applicationInfo = $this->getApplicationInfo($visaFormId, $journeyData);
+            
+            return view('applications.journey', compact('journeyData', 'applicationInfo', 'visaFormId', 'admissionId'));
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching application journey', [
+                'visa_form_id' => $visaFormId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('applications.index')
+                ->with('error', 'Unable to fetch application journey: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get journey data for a specific admission ID
+     */
+    private function getJourneyData($admissionId)
+    {
+        try {
+            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_journey';
+            $payload = $this->buildApiPayload([
+                'application_id' => $admissionId // Note: API uses 'application_id' but actually expects admission_id
+            ]);
+            
+            Log::info('Journey API payload', ['payload' => $payload, 'url' => $apiUrl]);
+            
+            $response = $this->makeApiCall($apiUrl, $payload);
+            
+            Log::info('Journey API response', ['response' => $response]);
+            
+            if ($response['status'] === 'success') {
+                return $response;
+            }
+            
+            return null;
+            
+        } catch (\Exception $e) {
+            Log::error('Error calling journey API', [
+                'admission_id' => $admissionId,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+    
+    /**
+     * Get the first admission ID for a visa_form_id
+     */
+    private function getFirstAdmissionId($visaFormId)
+    {
+        try {
+            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+            $payload = $this->buildApiPayload([
+                'visa_form_id' => $visaFormId
+            ]);
+            
+            $response = $this->makeApiCall($apiUrl, $payload);
+            
+            if ($response['status'] === 'success' && !empty($response['admissions'])) {
+                return $response['admissions'][0]['admissions_id'];
+            }
+            
+            return null;
+            
+        } catch (\Exception $e) {
+            Log::error('Error getting admission ID', [
+                'visa_form_id' => $visaFormId,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+    
+    /**
+     * Get application info for context
+     */
+    private function getApplicationInfo($visaFormId, $journeyData)
+    {
+        try {
+            // Try to get from journey data first
+            if (isset($journeyData['admission'])) {
+                return [
+                    'visa_form_id' => $visaFormId,
+                    'name' => 'Application #' . $visaFormId,
+                    'application_number' => $journeyData['admission']['application_number'] ?? null,
+                    'country' => $journeyData['admission']['country'] ?? null,
+                    'institute' => $journeyData['admission']['institute'] ?? null,
+                ];
+            }
+            
+            return [
+                'visa_form_id' => $visaFormId,
+                'name' => 'Application #' . $visaFormId
+            ];
+            
+        } catch (\Exception $e) {
+            Log::warning('Could not get application info', [
+                'visa_form_id' => $visaFormId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return [
+                'visa_form_id' => $visaFormId,
+                'name' => 'Application #' . $visaFormId
+            ];
+        }
+    }
+    
+    /**
+     * Test the application journey API - temporary method for debugging
+     */
+    public function testJourneyApi($applicationId = 187)
+    {
+        try {
+            // Test with simplified payload
+            $payload = ['b2b_admin_id' => 1, 'application_id' => $applicationId];
+            
+            // Get application journey
+            $journeyApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_journey';
+            $journeyResponse = $this->makeApiCall($journeyApiUrl, $payload);
+            
+            return response()->json([
+                'test_application_id' => $applicationId,
+                'journey_api_status' => $journeyResponse['status'] ?? 'failed',
+                'journey_admission_id' => $journeyResponse['admission']['admissions_id'] ?? 'Not found',
+                'journey_steps_count' => count($journeyResponse['journey'] ?? []),
+                'journey_steps' => $journeyResponse['journey'] ?? [],
+                'admission_country' => $journeyResponse['admission']['country'] ?? 'Not found',
+                'admission_institute' => $journeyResponse['admission']['institute'] ?? 'Not found',
+                'visa_status' => $journeyResponse['admission']['visa_info']['visa_status'] ?? 'Not found',
+                'interview_status' => $journeyResponse['admission']['interview_info']['interview'] ?? 'Not found',
+                'biometric_status' => $journeyResponse['admission']['biometric_info']['biometric'] ?? 'Not found',
+                'response_keys' => array_keys($journeyResponse),
+                'admission_keys' => array_keys($journeyResponse['admission'] ?? []),
+            ], 200, [], JSON_PRETTY_PRINT);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10)
+            ], 500, [], JSON_PRETTY_PRINT);
         }
     }
 }

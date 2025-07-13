@@ -165,6 +165,22 @@
                                 <p class="text-gray-900">{{ $courseOption->course_type }}</p>
                             </div>
                             @endif
+                            @if($courseOption->intake_year || $courseOption->intake_month)
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Intake</label>
+                                <p class="text-gray-900">
+                                    @if($courseOption->intake_month && $courseOption->intake_year)
+                                        {{ ucfirst($courseOption->intake_month) }} {{ $courseOption->intake_year }}
+                                    @elseif($courseOption->intake_month)
+                                        {{ ucfirst($courseOption->intake_month) }}
+                                    @elseif($courseOption->intake_year)
+                                        {{ $courseOption->intake_year }}
+                                    @else
+                                        Not specified
+                                    @endif
+                                </p>
+                            </div>
+                            @endif
                             @if($courseOption->fees)
                             <div>
                                 <label class="block text-sm font-medium text-gray-600 mb-1">Fees</label>

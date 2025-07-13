@@ -1134,7 +1134,9 @@ function addToApplicationSelection(courseId) {
         study_area: course.study_area || '',
         college_detail_id: course.college_detail_id || '',
         fees: course.fees || '',
-        duration: course.duration || ''
+        duration: course.duration || '',
+        intake_year: '', // Users can select this in the application form
+        intake_month: ''  // Users can select this in the application form
     };
     
     selectedCoursesForApplication.push(courseData);

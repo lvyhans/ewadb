@@ -19,6 +19,8 @@ class ApplicationCourseOption extends Model
         'course_type',
         'fees',
         'duration',
+        'intake_year',
+        'intake_month',
         'college_detail_id',
         'is_primary',
         'priority_order',

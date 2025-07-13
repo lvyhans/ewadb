@@ -139,6 +139,38 @@
                             </select>
                         </div>
                     </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Intake Year</label>
+                            <select name="intake_year" id="intake_year" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                                <option value="">Select Year</option>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                                <option value="2027">2027</option>
+                            </select>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Intake Month</label>
+                            <select name="intake_month" id="intake_month" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                                <option value="">Select Month</option>
+                                <option value="jan">Jan</option>
+                                <option value="feb">Feb</option>
+                                <option value="mar">Mar</option>
+                                <option value="apr">Apr</option>
+                                <option value="may">May</option>
+                                <option value="jun">Jun</option>
+                                <option value="jul">Jul</option>
+                                <option value="aug">Aug</option>
+                                <option value="sep">Sep</option>
+                                <option value="oct">Oct</option>
+                                <option value="nov">Nov</option>
+                                <option value="dec">Dec</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Multiple Course Selection Section -->
@@ -196,7 +228,16 @@
                             <label class="block text-sm font-medium text-gray-700">
                                 Mobile <span class="text-red-500">*</span>
                             </label>
-                            <input class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" type="tel" name="phone" placeholder="Phone number" required>
+                            <input class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" 
+                                   type="tel" 
+                                   name="phone" 
+                                   placeholder="Enter 10-digit phone number" 
+                                   pattern="[0-9]{10}" 
+                                   maxlength="10" 
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)"
+                                   title="Please enter exactly 10 digits"
+                                   required>
+                            <p class="text-xs text-gray-500 mt-1">Enter exactly 10 digits (numbers only)</p>
                         </div>
                         
                         <div class="space-y-2">
@@ -212,6 +253,32 @@
                         <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700">Residential City</label>
                             <input type="text" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="f_city" placeholder="Enter city">
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Gender</label>
+                            <select name="gender" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Passport Number</label>
+                            <input type="text" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="passport_no" placeholder="Enter passport number">
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Marital Status</label>
+                            <select name="marital_status" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all">
+                                <option value="">Select Marital Status</option>
+                                <option value="Single">Single</option>
+                                <option value="Married">Married</option>
+                                <option value="Divorced">Divorced</option>
+                                <option value="Widowed">Widowed</option>
+                            </select>
                         </div>
                     </div>
                     
@@ -592,6 +659,45 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize cascading dropdowns
     initializeCascadingDropdowns();
     
+    // Phone number validation
+    const phoneInput = document.querySelector('input[name="phone"]');
+    if (phoneInput) {
+        // Real-time validation as user types
+        phoneInput.addEventListener('input', function(e) {
+            // Remove any non-numeric characters
+            let value = e.target.value.replace(/[^0-9]/g, '');
+            
+            // Limit to 10 digits
+            if (value.length > 10) {
+                value = value.slice(0, 10);
+            }
+            
+            e.target.value = value;
+            
+            // Visual feedback
+            const isValid = value.length === 10;
+            if (value.length > 0) {
+                if (isValid) {
+                    e.target.classList.remove('border-red-300', 'bg-red-50');
+                    e.target.classList.add('border-green-300', 'bg-green-50');
+                } else {
+                    e.target.classList.remove('border-green-300', 'bg-green-50');
+                    e.target.classList.add('border-red-300', 'bg-red-50');
+                }
+            } else {
+                e.target.classList.remove('border-red-300', 'bg-red-50', 'border-green-300', 'bg-green-50');
+            }
+        });
+        
+        // Validation on blur
+        phoneInput.addEventListener('blur', function(e) {
+            const value = e.target.value;
+            if (value && value.length !== 10) {
+                showAlert('Phone number must be exactly 10 digits', 'error');
+            }
+        });
+    }
+    
     // Check for multiple course selection from course finder
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('from') === 'course-finder' && urlParams.get('multiple') === 'true') {
@@ -678,6 +784,22 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             console.log('Form submitted');
+            
+            // Validate phone number before submission
+            const phoneInput = document.querySelector('input[name="phone"]');
+            if (phoneInput) {
+                const phoneValue = phoneInput.value.trim();
+                if (!phoneValue) {
+                    showAlert('Phone number is required', 'error');
+                    phoneInput.focus();
+                    return false;
+                }
+                if (!/^\d{10}$/.test(phoneValue)) {
+                    showAlert('Phone number must be exactly 10 digits', 'error');
+                    phoneInput.focus();
+                    return false;
+                }
+            }
             
             const formData = new FormData(this);
             const submitBtn = document.querySelector('button[type="submit"]');
@@ -1165,6 +1287,9 @@ function fillFormWithLeadData(leadData, employmentHistory) {
             'email': leadData.email,
             'f_city': leadData.f_city,
             'address': leadData.address,
+            'gender': leadData.gender,
+            'passport_no': leadData.passport_no,
+            'marital_status': leadData.marital_status,
             
             // Country & College
             'country': leadData.country,
@@ -1822,16 +1947,32 @@ function createCourseOptionElement(courseData, index) {
                 <input type="text" value="${courseData.course || ''}" name="course_options[${index}][course]" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Course Type</label>
-                <input type="text" value="${courseData.course_type || ''}" name="course_options[${index}][course_type]" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Intake Year</label>
+                <select name="course_options[${index}][intake_year]" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                    <option value="">Select Year</option>
+                    <option value="2024" ${(courseData.intake_year || '') === '2024' ? 'selected' : ''}>2024</option>
+                    <option value="2025" ${(courseData.intake_year || '') === '2025' ? 'selected' : ''}>2025</option>
+                    <option value="2026" ${(courseData.intake_year || '') === '2026' ? 'selected' : ''}>2026</option>
+                    <option value="2027" ${(courseData.intake_year || '') === '2027' ? 'selected' : ''}>2027</option>
+                </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Fees</label>
-                <input type="text" value="${courseData.fees || ''}" name="course_options[${index}][fees]" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Duration</label>
-                <input type="text" value="${courseData.duration || ''}" name="course_options[${index}][duration]" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Intake Month</label>
+                <select name="course_options[${index}][intake_month]" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                    <option value="">Select Month</option>
+                    <option value="jan" ${(courseData.intake_month || '') === 'jan' ? 'selected' : ''}>Jan</option>
+                    <option value="feb" ${(courseData.intake_month || '') === 'feb' ? 'selected' : ''}>Feb</option>
+                    <option value="mar" ${(courseData.intake_month || '') === 'mar' ? 'selected' : ''}>Mar</option>
+                    <option value="apr" ${(courseData.intake_month || '') === 'apr' ? 'selected' : ''}>Apr</option>
+                    <option value="may" ${(courseData.intake_month || '') === 'may' ? 'selected' : ''}>May</option>
+                    <option value="jun" ${(courseData.intake_month || '') === 'jun' ? 'selected' : ''}>Jun</option>
+                    <option value="jul" ${(courseData.intake_month || '') === 'jul' ? 'selected' : ''}>Jul</option>
+                    <option value="aug" ${(courseData.intake_month || '') === 'aug' ? 'selected' : ''}>Aug</option>
+                    <option value="sep" ${(courseData.intake_month || '') === 'sep' ? 'selected' : ''}>Sep</option>
+                    <option value="oct" ${(courseData.intake_month || '') === 'oct' ? 'selected' : ''}>Oct</option>
+                    <option value="nov" ${(courseData.intake_month || '') === 'nov' ? 'selected' : ''}>Nov</option>
+                    <option value="dec" ${(courseData.intake_month || '') === 'dec' ? 'selected' : ''}>Dec</option>
+                </select>
             </div>
             <div>
                 <input type="hidden" name="course_options[${index}][college_detail_id]" value="${courseData.college_detail_id || ''}">
@@ -1854,9 +1995,8 @@ function addNewCourseOption() {
         city: '',
         college: '',
         course: '',
-        course_type: '',
-        fees: '',
-        duration: '',
+        intake_year: '',
+        intake_month: '',
         college_detail_id: ''
     };
     

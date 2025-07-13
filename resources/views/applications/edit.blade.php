@@ -172,6 +172,26 @@
                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all duration-200"
                            placeholder="Enter intake year">
                 </div>
+                
+                <div>
+                    <label for="intake_month" class="block text-sm font-medium text-gray-700 mb-2">Intake Month</label>
+                    <select id="intake_month" name="intake_month" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all duration-200">
+                        <option value="">Select Month</option>
+                        <option value="jan" {{ old('intake_month', $application->intake_month) == 'jan' ? 'selected' : '' }}>Jan</option>
+                        <option value="feb" {{ old('intake_month', $application->intake_month) == 'feb' ? 'selected' : '' }}>Feb</option>
+                        <option value="mar" {{ old('intake_month', $application->intake_month) == 'mar' ? 'selected' : '' }}>Mar</option>
+                        <option value="apr" {{ old('intake_month', $application->intake_month) == 'apr' ? 'selected' : '' }}>Apr</option>
+                        <option value="may" {{ old('intake_month', $application->intake_month) == 'may' ? 'selected' : '' }}>May</option>
+                        <option value="jun" {{ old('intake_month', $application->intake_month) == 'jun' ? 'selected' : '' }}>Jun</option>
+                        <option value="jul" {{ old('intake_month', $application->intake_month) == 'jul' ? 'selected' : '' }}>Jul</option>
+                        <option value="aug" {{ old('intake_month', $application->intake_month) == 'aug' ? 'selected' : '' }}>Aug</option>
+                        <option value="sep" {{ old('intake_month', $application->intake_month) == 'sep' ? 'selected' : '' }}>Sep</option>
+                        <option value="oct" {{ old('intake_month', $application->intake_month) == 'oct' ? 'selected' : '' }}>Oct</option>
+                        <option value="nov" {{ old('intake_month', $application->intake_month) == 'nov' ? 'selected' : '' }}>Nov</option>
+                        <option value="dec" {{ old('intake_month', $application->intake_month) == 'dec' ? 'selected' : '' }}>Dec</option>
+                    </select>
+                </div>
             </div>
         </div>
 

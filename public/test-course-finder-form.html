@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Course Finder Submission</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007cba; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        .course-option { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Test Course Finder Application Submission</h1>
+    <p>This form simulates what gets submitted when a user selects courses from the course finder and creates an application.</p>
+    
+    <form id="testForm" action="/applications" method="POST">
+        <input type="hidden" name="_token" value="{{ csrf_token() }}">
+        
+        <h2>Basic Application Data</h2>
+        
+        <div class="form-group">
+            <label for="name">Name *</label>
+            <input type="text" name="name" id="name" value="Test Course Finder User" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" name="email" id="email" value="test.cf@example.com">
+        </div>
+        
+        <div class="form-group">
+            <label for="phone">Phone *</label>
+            <input type="tel" name="phone" id="phone" value="1234567890" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="source">Source *</label>
+            <select name="source" id="source" required>
+                <option value="Course Finder">Course Finder</option>
+                <option value="Google">Google</option>
+                <option value="Reference">Reference</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="remarks">Remarks *</label>
+            <textarea name="remarks" id="remarks" required>Test application from course finder form</textarea>
+        </div>
+        
+        <h2>Course Options from Course Finder</h2>
+        <p>This section simulates the course options that would be submitted from the course finder.</p>
+        
+        <div class="course-option">
+            <h3>Course Option 1</h3>
+            
+            <div class="form-group">
+                <label>Country</label>
+                <input type="text" name="course_options[0][country]" value="France" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label>City</label>
+                <input type="text" name="course_options[0][city]" value="Default City">
+            </div>
+            
+            <div class="form-group">
+                <label>College</label>
+                <input type="text" name="course_options[0][college]" value="Default College">
+            </div>
+            
+            <div class="form-group">
+                <label>Course</label>
+                <input type="text" name="course_options[0][course]" value="Default Course">
+            </div>
+            
+            <div class="form-group">
+                <label>Course Type</label>
+                <input type="text" name="course_options[0][course_type]" value="Masters">
+            </div>
+            
+            <div class="form-group">
+                <label>Fees</label>
+                <input type="text" name="course_options[0][fees]" value="25000 EUR">
+            </div>
+            
+            <div class="form-group">
+                <label>Duration</label>
+                <input type="text" name="course_options[0][duration]" value="2 years">
+            </div>
+            
+            <div class="form-group">
+                <label>Intake Year</label>
+                <select name="course_options[0][intake_year]">
+                    <option value="">Select Year</option>
+                    <option value="2024">2024</option>
+                    <option value="2025" selected>2025</option>
+                    <option value="2026">2026</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Intake Month</label>
+                <select name="course_options[0][intake_month]">
+                    <option value="">Select Month</option>
+                    <option value="jan">Jan</option>
+                    <option value="feb">Feb</option>
+                    <option value="mar" selected>Mar</option>
+                    <option value="apr">Apr</option>
+                    <option value="may">May</option>
+                    <option value="jun">Jun</option>
+                    <option value="jul">Jul</option>
+                    <option value="aug">Aug</option>
+                    <option value="sep">Sep</option>
+                    <option value="oct">Oct</option>
+                    <option value="nov">Nov</option>
+                    <option value="dec">Dec</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>College Detail ID</label>
+                <input type="text" name="course_options[0][college_detail_id]" value="FR-001">
+            </div>
+        </div>
+        
+        <h2>Test Scenarios</h2>
+        <p>You can modify the intake fields above to test different scenarios:</p>
+        <ul>
+            <li><strong>Complete data:</strong> All fields filled (current state)</li>
+            <li><strong>Missing intake:</strong> Clear intake year and month fields</li>
+            <li><strong>Missing course data:</strong> Clear course name field</li>
+        </ul>
+        
+        <div class="debug">
+            <h3>Debug Info</h3>
+            <p>When you submit this form, check the Laravel logs at:</p>
+            <code>storage/logs/laravel.log</code>
+            <p>Look for entries containing:</p>
+            <ul>
+                <li><code>=== APPLICATION STORE START ===</code></li>
+                <li><code>Course options found in request</code></li>
+                <li><code>Processing Course Options from Course Finder</code></li>
+                <li><code>Preparing application data for API</code></li>
+            </ul>
+        </div>
+        
+        <button type="submit">Submit Test Application</button>
+    </form>
+    
+    <script>
+        document.getElementById('testForm').addEventListener('submit', function(e) {
+            console.log('Form submission started');
+            
+            // Log all course_options data
+            const formData = new FormData(this);
+            const courseOptions = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (key.startsWith('course_options[')) {
+                    courseOptions[key] = value;
+                }
+            }
+            
+            console.log('Course options being submitted:', courseOptions);
+            
+            // You can uncomment the next line to prevent actual submission for testing
+            // e.preventDefault();
+        });
+    </script>
+</body>
+</html>

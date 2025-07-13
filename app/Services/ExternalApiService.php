@@ -34,6 +34,9 @@ class ExternalApiService
                 // Prepare lead data for external API
                 $leadData = $this->prepareLeadData($lead);
                 
+                // Log the actual payload to JSON file for debugging
+                $this->logLeadPayloadToFile($leadData, $lead);
+                
                 Log::info('Sending lead to external API', [
                     'lead_id' => $lead->id,
                     'lead_ref_no' => $lead->ref_no,
@@ -112,7 +115,7 @@ class ExternalApiService
     /**
      * Send application data to external enquiry API
      */
-    public function sendApplication($application): bool
+    public function sendApplication($application, $additionalData = []): bool
     {
         // Check if external API is enabled
         if (!config('services.external_api.enabled')) {
@@ -133,7 +136,10 @@ class ExternalApiService
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
                 // Prepare application data for external API
-                $applicationData = $this->prepareApplicationData($application);
+                $applicationData = $this->prepareApplicationData($application, $additionalData);
+                
+                // Log the actual payload to JSON file for debugging
+                $this->logPayloadToFile($applicationData, $application);
                 
                 Log::info('Sending application to external API', [
                     'application_id' => $application->id,
@@ -313,14 +319,22 @@ class ExternalApiService
     }
 
     /**
-     * Prepare application data for external API
+     * Prepare application data for external API (simplified version)
      */
-    private function prepareApplicationData($application): array
+    private function prepareApplicationData($application, $additionalData = []): array
     {
-        // Load relationships including documents, course options, and admin details
-        $application->load(['employmentHistory', 'creator.roles', 'creator.admin.roles', 'documents', 'courseOptions']);
+        // Load only necessary relationships
+        $application->load(['employmentHistory', 'documents', 'courseOptions']);
         
-        return [
+        // Log course options count for debugging
+        \Log::info('Preparing application data for API', [
+            'application_id' => $application->id,
+            'application_number' => $application->application_number,
+            'course_options_count' => $application->courseOptions->count(),
+            'course_options_exist' => $application->courseOptions->isNotEmpty(),
+        ]);
+        
+        $payloadData = [
             'type' => 'application',
             'application_number' => $application->application_number,
             'lead_ref_no' => $application->lead_ref_no,
@@ -328,62 +342,71 @@ class ExternalApiService
             'email' => $application->email,
             'phone' => $application->phone,
             'date_of_birth' => $application->date_of_birth ? $application->date_of_birth->format('Y-m-d') : null,
-            'gender' => $application->gender,
-            'nationality' => $application->nationality,
-            'passport_number' => $application->passport_number,
-            'passport_expiry' => $application->passport_expiry ? $application->passport_expiry->format('Y-m-d') : null,
-            'marital_status' => $application->marital_status,
             'address' => $application->address,
             'city' => $application->city,
-            'state' => $application->state,
-            'postal_code' => $application->postal_code,
-            'country' => $application->country,
-            'emergency_contact_name' => $application->emergency_contact_name,
-            'emergency_contact_phone' => $application->emergency_contact_phone,
-            'emergency_contact_relationship' => $application->emergency_contact_relationship,
-            
-            // Study preferences
+            'gender' => $additionalData['gender'] ?? '',
+            'passport_no' => $additionalData['passport_no'] ?? '',
+            'marital_status' => $additionalData['marital_status'] ?? '',
             'preferred_country' => $application->preferred_country,
             'preferred_city' => $application->preferred_city,
             'preferred_college' => $application->preferred_college,
             'course_level' => $application->course_level,
             'field_of_study' => $application->field_of_study,
-            'intake_year' => $application->intake_year,
-            'intake_month' => $application->intake_month,
             
             // Course options from course finder
-            'course_options' => $application->courseOptions->map(function ($courseOption) {
-                return [
+            'admissions' => $application->courseOptions->map(function ($courseOption) {
+                // Log each course option for debugging
+                \Log::info('Processing course option for API payload', [
+                    'application_id' => $courseOption->application_id,
                     'country' => $courseOption->country,
                     'city' => $courseOption->city,
                     'college' => $courseOption->college,
                     'course' => $courseOption->course,
-                    'course_type' => $courseOption->course_type,
-                    'fees' => $courseOption->fees,
-                    'duration' => $courseOption->duration,
-                    'college_detail_id' => $courseOption->college_detail_id,
+                    'intake_year' => $courseOption->intake_year,
+                    'intake_month' => $courseOption->intake_month,
                     'is_primary' => $courseOption->is_primary,
                     'priority_order' => $courseOption->priority_order,
+                ]);
+                
+                return [
+                    'country' => $courseOption->country ?? '',
+                    'city' => $courseOption->city ?? '',
+                    'college' => $courseOption->college ?? '',
+                    'course' => $courseOption->course ?? '',
+                    'intake_year' => $courseOption->intake_year ?? '',
+                    'intake_month' => $courseOption->intake_month ?? '',
                 ];
             })->toArray(),
             
-            // Course options summary
-            'course_options_summary' => [
-                'total_count' => $application->courseOptions->count(),
-                'primary_course' => $application->courseOptions->where('is_primary', true)->first() ? [
-                    'course' => $application->courseOptions->where('is_primary', true)->first()->course,
-                    'college' => $application->courseOptions->where('is_primary', true)->first()->college,
-                    'country' => $application->courseOptions->where('is_primary', true)->first()->country,
-                ] : null,
-                'countries' => $application->courseOptions->pluck('country')->unique()->values()->toArray(),
-                'colleges' => $application->courseOptions->pluck('college')->unique()->values()->toArray(),
-            ],
-            
-            // English proficiency
+            // English proficiency - Include detailed scores
             'english_proficiency' => $application->english_proficiency,
             'ielts_score' => $application->ielts_score,
+            'ielts_overall' => $application->ielts_score, // Same as ielts_score for compatibility
+            'ielts_listening' => $application->ielts_listening ?? null,
+            'ielts_reading' => $application->ielts_reading ?? null,
+            'ielts_writing' => $application->ielts_writing ?? null,
+            'ielts_speaking' => $application->ielts_speaking ?? null,
+            
             'toefl_score' => $application->toefl_score,
+            'toefl_overall' => $application->toefl_score, // Same as toefl_score for compatibility
+            'toefl_listening' => $application->toefl_listening ?? null,
+            'toefl_reading' => $application->toefl_reading ?? null,
+            'toefl_writing' => $application->toefl_writing ?? null,
+            'toefl_speaking' => $application->toefl_speaking ?? null,
+            
             'pte_score' => $application->pte_score,
+            'pte_overall' => $application->pte_score, // Same as pte_score for compatibility
+            'pte_listening' => $application->pte_listening ?? null,
+            'pte_reading' => $application->pte_reading ?? null,
+            'pte_writing' => $application->pte_writing ?? null,
+            'pte_speaking' => $application->pte_speaking ?? null,
+            
+            'duolingo_overall' => $application->duolingo_overall ?? null,
+            'duolingo_listening' => $application->duolingo_listening ?? null,
+            'duolingo_reading' => $application->duolingo_reading ?? null,
+            'duolingo_writing' => $application->duolingo_writing ?? null,
+            'duolingo_speaking' => $application->duolingo_speaking ?? null,
+            
             'other_english_test' => $application->other_english_test,
             
             // Educational qualifications
@@ -438,12 +461,12 @@ class ExternalApiService
                     'mime_type' => $document->mime_type,
                     'is_mandatory' => $document->is_mandatory,
                     'status' => $document->status,
-                    'file_url' => $document->file_url, // Full URL to access the document
+                    'file_url' => $document->file_url,
                     'uploaded_at' => $document->created_at->toISOString(),
                 ];
             })->toArray(),
             
-            // Document summary for quick reference
+            // Documents summary
             'documents_summary' => [
                 'total_count' => $application->documents->count(),
                 'mandatory_count' => $application->documents->where('is_mandatory', true)->count(),
@@ -452,82 +475,22 @@ class ExternalApiService
                 'document_names' => $application->documents->pluck('document_name')->toArray(),
             ],
             
-            // User information (who created the application)
-            'created_by_user' => [
-                'id' => $application->creator->id,
-                'name' => $application->creator->name,
-                'email' => $application->creator->email,
-                'phone' => $application->creator->phone ?? null,
-                'city' => $application->creator->city ?? null,
-                'state' => $application->creator->state ?? null,
-                'zip' => $application->creator->zip ?? null,
-                'company_name' => $application->creator->company_name ?? null,
-                'company_registration_number' => $application->creator->company_registration_number ?? null,
-                'gstin' => $application->creator->gstin ?? null,
-                'pan_number' => $application->creator->pan_number ?? null,
-                'company_address' => $application->creator->company_address ?? null,
-                'company_city' => $application->creator->company_city ?? null,
-                'company_state' => $application->creator->company_state ?? null,
-                'company_pincode' => $application->creator->company_pincode ?? null,
-                'company_phone' => $application->creator->company_phone ?? null,
-                'company_email' => $application->creator->company_email ?? null,
-                'approval_status' => $application->creator->approval_status ?? null,
-                'approved_at' => $application->creator->approved_at ? $application->creator->approved_at->toISOString() : null,
-                'admin_group_name' => $application->creator->admin_group_name ?? null,
-                'admin_id' => $application->creator->admin_id ?? null, // Admin ID if user is a member
-                'roles' => $application->creator->role_names ?? [],
-                'primary_role' => $application->creator->role ?? 'member',
-                'is_super_admin' => $application->creator->isSuperAdmin(),
-                'is_regular_admin' => $application->creator->isRegularAdmin(),
-                'user_type' => $application->creator->hasRole('admin') ? 'admin' : 'member',
-            ],
-            
-            // Admin details (if user is a member under an admin)
-            'admin_details' => $application->creator->admin ? [
-                'id' => $application->creator->admin->id,
-                'name' => $application->creator->admin->name,
-                'email' => $application->creator->admin->email,
-                'phone' => $application->creator->admin->phone ?? null,
-                'company_name' => $application->creator->admin->company_name ?? null,
-                'company_registration_number' => $application->creator->admin->company_registration_number ?? null,
-                'gstin' => $application->creator->admin->gstin ?? null,
-                'pan_number' => $application->creator->admin->pan_number ?? null,
-                'company_address' => $application->creator->admin->company_address ?? null,
-                'company_city' => $application->creator->admin->company_city ?? null,
-                'company_state' => $application->creator->admin->company_state ?? null,
-                'company_pincode' => $application->creator->admin->company_pincode ?? null,
-                'company_phone' => $application->creator->admin->company_phone ?? null,
-                'company_email' => $application->creator->admin->company_email ?? null,
-                'approval_status' => $application->creator->admin->approval_status ?? null,
-                'approved_at' => $application->creator->admin->approved_at ? $application->creator->admin->approved_at->toISOString() : null,
-                'admin_group_name' => $application->creator->admin->admin_group_name ?? null,
-                'is_super_admin' => $application->creator->admin->isSuperAdmin(),
-                'total_members' => $application->creator->admin->members()->count(),
-                'active_members' => $application->creator->admin->members()->where('approval_status', 'approved')->count(),
-            ] : null,
-            
-            // Organization/Company hierarchy info
-            'organization_info' => [
-                'company_name' => $application->creator->admin ? 
-                    $application->creator->admin->company_name : 
-                    $application->creator->company_name,
-                'company_registration_number' => $application->creator->admin ? 
-                    $application->creator->admin->company_registration_number : 
-                    $application->creator->company_registration_number,
-                'gstin' => $application->creator->admin ? 
-                    $application->creator->admin->gstin : 
-                    $application->creator->gstin,
-                'admin_group_name' => $application->creator->admin_group_name ?? 
-                    ($application->creator->admin ? $application->creator->admin->admin_group_name : null),
-                'hierarchy_level' => $application->creator->hasRole('admin') ? 'admin' : 'member',
-                'is_independent_admin' => $application->creator->hasRole('admin') && !$application->creator->admin,
-                'under_admin' => $application->creator->admin ? true : false,
-            ],
-            
             // Metadata
             'created_at' => $application->created_at->toISOString(),
             'updated_at' => $application->updated_at->toISOString(),
         ];
+        
+        // Log the final payload structure with emphasis on admissions
+        \Log::info('Final API payload prepared', [
+            'application_id' => $application->id,
+            'application_number' => $application->application_number,
+            'total_payload_keys' => count($payloadData),
+            'admissions_array_count' => count($payloadData['admissions'] ?? []),
+            'admissions_array' => $payloadData['admissions'] ?? [],
+            'has_course_options' => $application->courseOptions->isNotEmpty(),
+        ]);
+        
+        return $payloadData;
     }
 
     /**
@@ -1052,5 +1015,131 @@ class ExternalApiService
         ];
 
         return $testCourses[$country][$city][$college] ?? [['course_name' => 'Default Course']];
+    }
+
+    /**
+     * Log the payload to a JSON file for debugging purposes
+     */
+    private function logPayloadToFile(array $payload, $application): void
+    {
+        try {
+            $logPath = base_path('api_payload_logs.json');
+            
+            // Create the log entry
+            $logEntry = [
+                'timestamp' => now()->toISOString(),
+                'application_id' => $application->id,
+                'application_number' => $application->application_number,
+                'applicant_name' => $application->name,
+                'created_by' => $application->creator->name ?? 'Unknown',
+                'payload' => $payload
+            ];
+            
+            // Read existing logs or create new structure
+            $existingLogs = [];
+            if (file_exists($logPath)) {
+                $existingContent = file_get_contents($logPath);
+                $existingLogs = json_decode($existingContent, true) ?? [];
+            }
+            
+            // Initialize structure if needed
+            if (!isset($existingLogs['payloads'])) {
+                $existingLogs = [
+                    'note' => 'This file contains actual API payloads sent when applications are created',
+                    'last_updated' => now()->toISOString(),
+                    'total_count' => 0,
+                    'payloads' => []
+                ];
+            }
+            
+            // Add new payload
+            $existingLogs['payloads'][] = $logEntry;
+            $existingLogs['last_updated'] = now()->toISOString();
+            $existingLogs['total_count'] = count($existingLogs['payloads']);
+            
+            // Keep only last 50 payloads to prevent file from getting too large
+            if (count($existingLogs['payloads']) > 50) {
+                $existingLogs['payloads'] = array_slice($existingLogs['payloads'], -50);
+                $existingLogs['total_count'] = 50;
+            }
+            
+            // Write back to file
+            file_put_contents($logPath, json_encode($existingLogs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            
+            Log::info('API payload logged to file', [
+                'application_id' => $application->id,
+                'log_file' => $logPath,
+                'payload_size' => strlen(json_encode($payload))
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to log API payload to file', [
+                'application_id' => $application->id ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Log the lead payload to a JSON file for debugging purposes
+     */
+    private function logLeadPayloadToFile(array $payload, $lead): void
+    {
+        try {
+            $logPath = base_path('api_lead_payload_logs.json');
+            
+            // Create the log entry
+            $logEntry = [
+                'timestamp' => now()->toISOString(),
+                'lead_id' => $lead->id,
+                'lead_ref_no' => $lead->ref_no,
+                'lead_name' => $lead->name,
+                'created_by' => $lead->creator->name ?? 'Unknown',
+                'payload' => $payload
+            ];
+            
+            // Read existing logs or create new structure
+            $existingLogs = [];
+            if (file_exists($logPath)) {
+                $existingContent = file_get_contents($logPath);
+                $existingLogs = json_decode($existingContent, true) ?? [];
+            }
+            
+            // Initialize structure if needed
+            if (!isset($existingLogs['payloads'])) {
+                $existingLogs = [
+                    'note' => 'This file contains actual API payloads sent when leads are created',
+                    'last_updated' => now()->toISOString(),
+                    'total_count' => 0,
+                    'payloads' => []
+                ];
+            }
+            
+            // Add new payload
+            $existingLogs['payloads'][] = $logEntry;
+            $existingLogs['last_updated'] = now()->toISOString();
+            $existingLogs['total_count'] = count($existingLogs['payloads']);
+            
+            // Keep only last 50 payloads to prevent file from getting too large
+            if (count($existingLogs['payloads']) > 50) {
+                $existingLogs['payloads'] = array_slice($existingLogs['payloads'], -50);
+                $existingLogs['total_count'] = 50;
+            }
+            
+            // Write back to file
+            file_put_contents($logPath, json_encode($existingLogs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            
+            Log::info('Lead API payload logged to file', [
+                'lead_id' => $lead->id,
+                'log_file' => $logPath,
+                'payload_size' => strlen(json_encode($payload))
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to log lead API payload to file', [
+                'lead_id' => $lead->id ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }

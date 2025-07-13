@@ -119,6 +119,100 @@ Route::middleware('auth')->group(function () {
         // Test API payload for specific application
         Route::get('/{id}/test-api-payload', [ApplicationController::class, 'testApplicationApiPayload'])->name('test-api-payload');
         
+        // Document management routes
+        Route::get('/{id}/documents', [ApplicationController::class, 'getDocuments'])->name('documents');
+        Route::get('/{id}/documents/download-all', [ApplicationController::class, 'downloadAllDocuments'])->name('documents.download-all');
+        Route::get('/documents/{id}/view', [ApplicationController::class, 'viewDocument'])->name('documents.view');
+        Route::get('/documents/{id}/download', [ApplicationController::class, 'downloadDocument'])->name('documents.download');
+        
+        // API application view - single detailed view only
+        Route::get('/api/{visa_form_id}', [ApplicationController::class, 'showApiApplicationDetails'])->name('show-api');
+        Route::get('/api/{visa_form_id}/details-json', [ApplicationController::class, 'getApplicationDetails'])->name('api-details-json');
+        
+        // Test routes for API responses
+        Route::get('/test-application-details', function() {
+            return response()->json([
+                "status" => "success",
+                "form_id" => 388,
+                "admissions_count" => 4,
+                "documents_count" => 5,
+                "admissions" => [
+                    [
+                        "admissions_id" => 191,
+                        "branch" => "Uttrakhand",
+                        "country" => "USA",
+                        "city" => "Mohali",
+                        "institute" => "test",
+                        "intake_year" => "2025",
+                        "intake_month" => "Sept",
+                        "created" => "2025-07-09 12:44:25"
+                    ],
+                    [
+                        "admissions_id" => 189,
+                        "branch" => "Uttrakhand",
+                        "country" => "U.K",
+                        "city" => "Mohali",
+                        "institute" => "test",
+                        "intake_year" => "2025",
+                        "intake_month" => "Sept",
+                        "created" => "2025-07-07 12:19:46"
+                    ],
+                    [
+                        "admissions_id" => 188,
+                        "branch" => "Uttrakhand",
+                        "country" => "U.K",
+                        "city" => "test",
+                        "institute" => "test",
+                        "intake_year" => "2024",
+                        "intake_month" => "Feb",
+                        "created" => "2025-07-03 15:59:58"
+                    ],
+                    [
+                        "admissions_id" => 187,
+                        "branch" => null,
+                        "country" => "Canada",
+                        "city" => "Rerum aperiam accusa",
+                        "institute" => "Est vero nemo suscip",
+                        "intake_year" => "2025",
+                        "intake_month" => "jan",
+                        "created" => "2025-07-03 09:49:18"
+                    ]
+                ],
+                "documents" => [
+                    [
+                        "document_id" => 371,
+                        "document_type" => "LOR 1",
+                        "document" => "uploads/documents/801374.pdf",
+                        "mandatory" => 1
+                    ],
+                    [
+                        "document_id" => 370,
+                        "document_type" => "LOR 2",
+                        "document" => "uploads/documents/906505.pdf",
+                        "mandatory" => 1
+                    ],
+                    [
+                        "document_id" => 369,
+                        "document_type" => "Contract sign",
+                        "document" => "https://b2b.innerxlite.com/storage/application_documents/1751020483_3_dummy.pdf",
+                        "mandatory" => 1
+                    ],
+                    [
+                        "document_id" => 368,
+                        "document_type" => "10th",
+                        "document" => "https://b2b.innerxlite.com/storage/application_documents/1751020483_2_dummy.pdf",
+                        "mandatory" => 1
+                    ],
+                    [
+                        "document_id" => 367,
+                        "document_type" => "12th",
+                        "document" => "https://b2b.innerxlite.com/storage/application_documents/1751020483_1_dummy.pdf",
+                        "mandatory" => 1
+                    ]
+                ]
+            ]);
+        })->name('test.application.details');
+
         Route::get('/{id}', [ApplicationController::class, 'show'])->name('show');
         Route::delete('/{id}', [ApplicationController::class, 'destroy'])->name('destroy');
     });
@@ -144,5 +238,61 @@ Route::middleware('auth')->group(function () {
 Route::middleware('guest')->group(function () {
     Route::redirect('/home', '/dashboard');
 });
+
+// Test API integration route (temporary)
+Route::get('/test-api/{visa_form_id?}', [ApplicationController::class, 'testApiIntegration'])->name('test-api');
+
+// Debug route to test journey integration
+Route::get('/debug-journey-integration/{visa_form_id?}', function($visaFormId = 388) {
+    $controller = new \App\Http\Controllers\ApplicationController();
+    
+    // Simulate the same calls as showApiApplicationDetails
+    try {
+        $basicApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application';
+        $basicPayload = ['b2b_admin_id' => 1, 'visa_form_id' => $visaFormId];
+        
+        $detailsApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+        $detailsPayload = ['b2b_admin_id' => 1, 'visa_form_id' => $visaFormId];
+        
+        // Use reflection to access private methods
+        $reflection = new \ReflectionClass($controller);
+        $makeApiCall = $reflection->getMethod('makeApiCall');
+        $makeApiCall->setAccessible(true);
+        $getJourneyData = $reflection->getMethod('getJourneyData');
+        $getJourneyData->setAccessible(true);
+        
+        $basicResponse = $makeApiCall->invoke($controller, $basicApiUrl, $basicPayload);
+        $detailsResponse = $makeApiCall->invoke($controller, $detailsApiUrl, $detailsPayload);
+        
+        $journeyTests = [];
+        if ($detailsResponse['status'] === 'success' && isset($detailsResponse['admissions'])) {
+            foreach ($detailsResponse['admissions'] as $admission) {
+                if (isset($admission['admissions_id'])) {
+                    $admissionId = $admission['admissions_id'];
+                    $journey = $getJourneyData->invoke($controller, $admissionId);
+                    $journeyTests[$admissionId] = [
+                        'admission_info' => $admission,
+                        'journey_status' => $journey ? $journey['status'] : 'failed',
+                        'journey_data' => $journey
+                    ];
+                }
+            }
+        }
+        
+        return response()->json([
+            'visa_form_id' => $visaFormId,
+            'basic_api_status' => $basicResponse['status'],
+            'details_api_status' => $detailsResponse['status'],
+            'admissions_count' => count($detailsResponse['admissions'] ?? []),
+            'journey_tests' => $journeyTests
+        ], 200, [], JSON_PRETTY_PRINT);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500, [], JSON_PRETTY_PRINT);
+    }
+})->name('debug-journey-integration');
 
 require __DIR__.'/auth.php';
