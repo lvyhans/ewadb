@@ -11,6 +11,7 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\FollowupController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CourseFinderController;
+use App\Http\Controllers\TaskManagementController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -72,6 +73,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings', [SettingsController::class, 'store'])->name('settings.store');
     Route::delete('/settings/{setting}', [SettingsController::class, 'destroy'])->name('settings.destroy');
     Route::post('/settings/initialize', [SettingsController::class, 'initializeDefaults'])->name('settings.initialize');
+    Route::post('/settings/clear-cache', [SettingsController::class, 'clearCache'])->name('settings.clear-cache');
     
     // Lead Management Web Routes
     Route::prefix('leads')->name('leads.')->group(function () {
@@ -232,6 +234,27 @@ Route::middleware('auth')->group(function () {
     Route::patch('/followups/{followup}/complete', [\App\Http\Controllers\FollowupController::class, 'complete'])->name('followups.complete');
     Route::patch('/followups/{followup}/reschedule', [\App\Http\Controllers\FollowupController::class, 'reschedule'])->name('followups.reschedule');
     Route::resource('followups', \App\Http\Controllers\FollowupController::class);
+    
+    // Task Management Routes
+    Route::prefix('tasks')->name('tasks.')->group(function () {
+        Route::get('/', [TaskManagementController::class, 'index'])->name('index');
+        Route::get('/create', [TaskManagementController::class, 'create'])->name('create');
+        Route::post('/store', [TaskManagementController::class, 'store'])->name('store');
+        Route::get('/{id}', [TaskManagementController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [TaskManagementController::class, 'edit'])->name('edit');
+        Route::patch('/{id}', [TaskManagementController::class, 'update'])->name('update');
+        Route::delete('/{id}', [TaskManagementController::class, 'destroy'])->name('destroy');
+    });
+
+    // External Task Management Routes (API Integration)
+    Route::prefix('task-management')->name('task-management.')->group(function () {
+        Route::get('/', [TaskManagementController::class, 'index'])->name('index');
+        Route::get('/count', [TaskManagementController::class, 'getTaskCount'])->name('count');
+        Route::get('/tasks', [TaskManagementController::class, 'getTasks'])->name('tasks');
+        Route::get('/export', [TaskManagementController::class, 'exportTasks'])->name('export');
+        Route::get('/show', [TaskManagementController::class, 'showTask'])->name('show');
+        Route::post('/complete', [TaskManagementController::class, 'completeTask'])->name('complete');
+    });
 });
 
 // Redirect authenticated users from login page to dashboard

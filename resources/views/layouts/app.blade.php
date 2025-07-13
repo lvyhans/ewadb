@@ -492,6 +492,17 @@
                         <span>Course Finder</span>
                     </a>
                     
+                    <!-- Task Management -->
+                    <a href="{{ route('task-management.index') }}" 
+                       class="nav-item flex items-center px-4 py-3 text-sm font-medium text-white/80 rounded-xl hover:bg-white/10 hover:text-white transition-all duration-200 group {{ request()->routeIs('task-management.*') ? 'bg-white/20 text-white shadow-lg' : '' }}">
+                        <div class="w-5 h-5 mr-3 transition-transform duration-200 group-hover:scale-110">
+                            <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v2m0 0v6a2 2 0 002 2h6a2 2 0 002-2V9m0 0h2a2 2 0 002-2V7a2 2 0 00-2-2h-2m-6 4h.01M15 13h.01M9 17h.01"></path>
+                            </svg>
+                        </div>
+                        <span>Task Management</span>
+                    </a>
+                    
                     <!-- Settings -->
                     <a href="{{ route('settings.index') }}" 
                        class="nav-item flex items-center px-4 py-3 text-sm font-medium text-white/80 rounded-xl hover:bg-white/10 hover:text-white transition-all duration-200 group {{ request()->routeIs('settings.*') ? 'bg-white/20 text-white shadow-lg' : '' }}">

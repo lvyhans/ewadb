@@ -178,3 +178,18 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
         ]);
     });
 });
+
+// Task Management API Routes
+Route::prefix('task-management')->middleware('auth:sanctum')->group(function () {
+    // Fetch tasks (generic endpoint)
+    Route::post('/tasks', [\App\Http\Controllers\Api\TaskManagementController::class, 'fetchTasks']);
+    
+    // Get task count only
+    Route::post('/tasks/count', [\App\Http\Controllers\Api\TaskManagementController::class, 'getTaskCount']);
+    
+    // Get full task details
+    Route::post('/tasks/full', [\App\Http\Controllers\Api\TaskManagementController::class, 'getFullTasks']);
+    
+    // Get tasks with advanced filtering
+    Route::post('/tasks/filtered', [\App\Http\Controllers\Api\TaskManagementController::class, 'getTasksFiltered']);
+});

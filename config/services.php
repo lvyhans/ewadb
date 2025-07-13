@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -45,4 +44,9 @@ return [
         'enabled' => env('EXTERNAL_API_ENABLED', false),
     ],
 
+    'task_management' => [
+        'base_url' => env('TASK_MANAGEMENT_API_URL', 'https://tarundemo.innerxcrm.com/b2bapi'),
+        'timeout' => env('TASK_MANAGEMENT_API_TIMEOUT', 30),
+        'enabled' => env('TASK_MANAGEMENT_API_ENABLED', true),
+    ],
 ];
