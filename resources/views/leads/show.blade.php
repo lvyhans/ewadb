@@ -3,7 +3,7 @@
 @section('page-title', 'Lead Details - ' . $lead->name)
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div class="mx-auto">
     <!-- Lead Header -->
     <div class="glass-effect rounded-2xl shadow-xl border border-white/20 overflow-hidden mb-6">
         <div class="bg-gradient-to-r from-blue-600/10 to-purple-600/10 p-6 border-b border-white/20">

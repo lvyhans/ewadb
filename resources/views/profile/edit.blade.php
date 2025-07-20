@@ -4,7 +4,7 @@
 @section('page-title', 'Profile Settings')
 
 @section('content')
-<div class="max-w-4xl mx-auto">
+<div class="mx-auto">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <!-- Profile Information Card -->

@@ -1556,8 +1556,24 @@ class ApplicationController extends Controller
             $journeyData = $this->getJourneyData($admissionId);
             
             if (!$journeyData) {
-                return redirect()->route('applications.index')
-                    ->with('error', 'No journey data found for this application.');
+                // Try to get at least admission data
+                $admissionData = $this->getAdmissionData($visaFormId, $admissionId);
+                if ($admissionData) {
+                    $journeyData = [
+                        'status' => 'partial',
+                        'admission' => $admissionData,
+                        'message' => 'Journey tracking is currently unavailable, but admission details are shown.'
+                    ];
+                } else {
+                    return redirect()->route('applications.index')
+                        ->with('error', 'No data found for this application.');
+                }
+            }
+            
+            // Process journey data if we have it
+            if (isset($journeyData['journey'])) {
+                $processedJourney = $this->processJourneyData($journeyData);
+                $journeyData['processed_journey'] = $processedJourney;
             }
             
             // Get application info for context
@@ -1574,6 +1590,202 @@ class ApplicationController extends Controller
             
             return redirect()->route('applications.index')
                 ->with('error', 'Unable to fetch application journey: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Process and format journey data from API response
+     */
+    private function processJourneyData($journeyData)
+    {
+        if (!isset($journeyData['journey'])) {
+            return null;
+        }
+
+        $journey = $journeyData['journey'];
+        $journeyFull = $journey['journey_full'] ?? [];
+        $journeyDone = $journey['journey_done'] ?? [];
+        
+        // Create a structured journey with status for each step
+        $processedJourney = [];
+        
+        foreach ($journeyFull as $index => $step) {
+            $isCompleted = in_array($step, $journeyDone);
+            $isActive = false;
+            
+            // Determine if this is the current active step (first incomplete step)
+            if (!$isCompleted) {
+                $allPreviousCompleted = true;
+                for ($i = 0; $i < $index; $i++) {
+                    if (!in_array($journeyFull[$i], $journeyDone)) {
+                        $allPreviousCompleted = false;
+                        break;
+                    }
+                }
+                $isActive = $allPreviousCompleted;
+            }
+            
+            $processedJourney[] = [
+                'step' => $step,
+                'order' => $index + 1,
+                'status' => $isCompleted ? 'completed' : ($isActive ? 'active' : 'pending'),
+                'is_completed' => $isCompleted,
+                'is_active' => $isActive,
+                'progress_percentage' => $this->calculateStepProgress($step, $journeyData['admission'] ?? [])
+            ];
+        }
+        
+        // Calculate overall progress
+        $overallProgress = count($journeyFull) > 0 ? (count($journeyDone) / count($journeyFull)) * 100 : 0;
+        
+        return [
+            'steps' => $processedJourney,
+            'total_steps' => count($journeyFull),
+            'completed_steps' => count($journeyDone),
+            'overall_progress' => round($overallProgress, 1),
+            'current_step' => $this->getCurrentStepDetails($processedJourney),
+            'next_step' => $this->getNextStepDetails($processedJourney)
+        ];
+    }
+
+    /**
+     * Calculate progress percentage for individual steps based on admission data
+     */
+    private function calculateStepProgress($step, $admissionData)
+    {
+        // Map steps to their corresponding data fields in admission
+        $stepMappings = [
+            'OFFER APPLIED' => ['mark_complete'],
+            'OFFER UPLOAD' => ['offer_letter'],
+            'OFFER DENIED' => ['offer_letter_info.offer_denied'],
+            'TT RECEIPT' => ['tt_info.tt_receipt_date', 'tt_info.tt_file'],
+            'TT MAIL' => ['tt_info.tt_receipt_mail_date'],
+            'INSTITUTE PAYMENT' => ['institute_payment'],
+            'FILLING DOCUMENT' => ['filling_docs'],
+            'VISA LODGMENT' => ['visa_lodgment'],
+            'VISA STATUS' => ['visa_info.visa_status', 'visa_info.visa_date']
+        ];
+        
+        if (!isset($stepMappings[$step])) {
+            return 0;
+        }
+        
+        $fields = $stepMappings[$step];
+        $completedFields = 0;
+        $totalFields = count($fields);
+        
+        foreach ($fields as $field) {
+            if (strpos($field, '.') !== false) {
+                // Handle nested fields
+                $parts = explode('.', $field);
+                $value = $admissionData;
+                foreach ($parts as $part) {
+                    $value = $value[$part] ?? null;
+                    if ($value === null) break;
+                }
+            } else {
+                $value = $admissionData[$field] ?? null;
+            }
+            
+            // Check if field has meaningful data
+            if ($this->hasValidData($value)) {
+                $completedFields++;
+            }
+        }
+        
+        return $totalFields > 0 ? round(($completedFields / $totalFields) * 100) : 0;
+    }
+
+    /**
+     * Check if a value contains valid/meaningful data
+     */
+    private function hasValidData($value)
+    {
+        if ($value === null || $value === '' || $value === '0000-00-00' || $value === '0000-00-00 00:00:00') {
+            return false;
+        }
+        
+        if (is_array($value)) {
+            return !empty($value);
+        }
+        
+        if (is_numeric($value)) {
+            return $value > 0;
+        }
+        
+        return !empty(trim($value));
+    }
+
+    /**
+     * Get details of the current active step
+     */
+    private function getCurrentStepDetails($processedJourney)
+    {
+        foreach ($processedJourney as $step) {
+            if ($step['is_active']) {
+                return $step;
+            }
+        }
+        
+        // If no active step found, return the last completed step
+        $completedSteps = array_filter($processedJourney, function($step) {
+            return $step['is_completed'];
+        });
+        
+        return !empty($completedSteps) ? end($completedSteps) : null;
+    }
+
+    /**
+     * Get details of the next pending step
+     */
+    private function getNextStepDetails($processedJourney)
+    {
+        $foundActive = false;
+        
+        foreach ($processedJourney as $step) {
+            if ($foundActive && $step['status'] === 'pending') {
+                return $step;
+            }
+            
+            if ($step['is_active']) {
+                $foundActive = true;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Get admission data from application_details API when journey data is not available
+     */
+    private function getAdmissionData($visaFormId, $admissionId)
+    {
+        try {
+            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+            $payload = $this->buildApiPayload([
+                'visa_form_id' => $visaFormId
+            ]);
+            
+            $response = $this->makeApiCall($apiUrl, $payload);
+            
+            if ($response['status'] === 'success' && !empty($response['admissions'])) {
+                // Find the specific admission
+                foreach ($response['admissions'] as $admission) {
+                    if ($admission['admissions_id'] == $admissionId) {
+                        return $admission;
+                    }
+                }
+            }
+            
+            return null;
+            
+        } catch (\Exception $e) {
+            Log::error('Error getting admission data', [
+                'visa_form_id' => $visaFormId,
+                'admission_id' => $admissionId,
+                'error' => $e->getMessage()
+            ]);
+            return null;
         }
     }
     
@@ -1606,107 +1818,6 @@ class ApplicationController extends Controller
                 'error' => $e->getMessage()
             ]);
             return null;
-        }
-    }
-    
-    /**
-     * Get the first admission ID for a visa_form_id
-     */
-    private function getFirstAdmissionId($visaFormId)
-    {
-        try {
-            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
-            $payload = $this->buildApiPayload([
-                'visa_form_id' => $visaFormId
-            ]);
-            
-            $response = $this->makeApiCall($apiUrl, $payload);
-            
-            if ($response['status'] === 'success' && !empty($response['admissions'])) {
-                return $response['admissions'][0]['admissions_id'];
-            }
-            
-            return null;
-            
-        } catch (\Exception $e) {
-            Log::error('Error getting admission ID', [
-                'visa_form_id' => $visaFormId,
-                'error' => $e->getMessage()
-            ]);
-            return null;
-        }
-    }
-    
-    /**
-     * Get application info for context
-     */
-    private function getApplicationInfo($visaFormId, $journeyData)
-    {
-        try {
-            // Try to get from journey data first
-            if (isset($journeyData['admission'])) {
-                return [
-                    'visa_form_id' => $visaFormId,
-                    'name' => 'Application #' . $visaFormId,
-                    'application_number' => $journeyData['admission']['application_number'] ?? null,
-                    'country' => $journeyData['admission']['country'] ?? null,
-                    'institute' => $journeyData['admission']['institute'] ?? null,
-                ];
-            }
-            
-            return [
-                'visa_form_id' => $visaFormId,
-                'name' => 'Application #' . $visaFormId
-            ];
-            
-        } catch (\Exception $e) {
-            Log::warning('Could not get application info', [
-                'visa_form_id' => $visaFormId,
-                'error' => $e->getMessage()
-            ]);
-            
-            return [
-                'visa_form_id' => $visaFormId,
-                'name' => 'Application #' . $visaFormId
-            ];
-        }
-    }
-    
-    /**
-     * Test the application journey API - temporary method for debugging
-     */
-    public function testJourneyApi($applicationId = 187)
-    {
-        try {
-            // Test with simplified payload
-            $payload = ['b2b_admin_id' => 1, 'application_id' => $applicationId];
-            
-            // Get application journey
-            $journeyApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_journey';
-            $journeyResponse = $this->makeApiCall($journeyApiUrl, $payload);
-            
-            return response()->json([
-                'test_application_id' => $applicationId,
-                'journey_api_status' => $journeyResponse['status'] ?? 'failed',
-                'journey_admission_id' => $journeyResponse['admission']['admissions_id'] ?? 'Not found',
-                'journey_steps_count' => count($journeyResponse['journey'] ?? []),
-                'journey_steps' => $journeyResponse['journey'] ?? [],
-                'admission_country' => $journeyResponse['admission']['country'] ?? 'Not found',
-                'admission_institute' => $journeyResponse['admission']['institute'] ?? 'Not found',
-                'visa_status' => $journeyResponse['admission']['visa_info']['visa_status'] ?? 'Not found',
-                'interview_status' => $journeyResponse['admission']['interview_info']['interview'] ?? 'Not found',
-                'biometric_status' => $journeyResponse['admission']['biometric_info']['biometric'] ?? 'Not found',
-                'response_keys' => array_keys($journeyResponse),
-                'admission_keys' => array_keys($journeyResponse['admission'] ?? []),
-            ], 200, [], JSON_PRETTY_PRINT);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10)
-            ], 500, [], JSON_PRETTY_PRINT);
         }
     }
 }

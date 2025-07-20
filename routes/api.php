@@ -136,6 +136,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('applications')->group(function () {
         Route::post('/get-lead-data', [ApplicationController::class, 'getLeadData']);
         Route::post('/get-country-qualification-data', [ApplicationController::class, 'getCountryQualificationData']);
+        Route::post('/journey', [ApplicationController::class, 'getFormattedApplicationJourney']);
+        Route::get('/journey/{applicationId}', [ApplicationController::class, 'getApplicationJourney']);
     });
 
     // Lead Revert Management API Routes (Internal)
@@ -192,4 +194,10 @@ Route::prefix('task-management')->middleware('auth:sanctum')->group(function () 
     
     // Get tasks with advanced filtering
     Route::post('/tasks/filtered', [\App\Http\Controllers\Api\TaskManagementController::class, 'getTasksFiltered']);
+});
+
+// External Task Webhook API - no auth:sanctum to allow external access
+Route::prefix('webhooks')->group(function () {
+    // Tarundemo task status webhook
+    Route::post('/tasks', [\App\Http\Controllers\Api\TaskWebhookController::class, 'handleTaskWebhook']);
 });

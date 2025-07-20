@@ -415,6 +415,113 @@ class LeadController extends Controller
     }
 
     /**
+     * Show the form for editing the specified lead (Web)
+     */
+    public function edit($id)
+    {
+        $lead = Lead::with(['creator', 'assignedUser', 'employmentHistory'])
+                   ->findOrFail($id);
+        
+        return view('leads.edit', compact('lead'));
+    }
+
+    /**
+     * Update the specified lead (Web)
+     */
+    public function webUpdate(Request $request, $id)
+    {
+        $lead = Lead::findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'dob' => 'nullable|date',
+            'father_name' => 'nullable|string|max:255',
+            'alt_phone' => 'nullable|string|max:20',
+            'city' => 'nullable|string|max:255',
+            'address' => 'nullable|string',
+            'preferred_country' => 'nullable|string|max:255',
+            'preferred_city' => 'nullable|string|max:255',
+            'preferred_college' => 'nullable|string|max:255',
+            'preferred_course' => 'nullable|string|max:255',
+            'travel_history' => 'nullable|string',
+            'any_refusal' => 'nullable|string',
+            'spouse_name' => 'nullable|string|max:255',
+            'any_gap' => 'nullable|string',
+            'last_qualification' => 'nullable|in:10th,12th,diploma,bachelor,graduation,master,post graduation,phd',
+            'previous_visa_application' => 'nullable|string',
+            'score_type' => 'nullable|in:ielts,toefl,pte,duolingo,other,none',
+            'ielts_overall' => 'nullable|numeric|between:0,9',
+            'ielts_listening' => 'nullable|numeric|between:0,9',
+            'ielts_reading' => 'nullable|numeric|between:0,9',
+            'ielts_writing' => 'nullable|numeric|between:0,9',
+            'ielts_speaking' => 'nullable|numeric|between:0,9',
+            'pte_overall' => 'nullable|numeric|between:0,90',
+            'pte_listening' => 'nullable|numeric|between:0,90',
+            'pte_reading' => 'nullable|numeric|between:0,90',
+            'pte_writing' => 'nullable|numeric|between:0,90',
+            'pte_speaking' => 'nullable|numeric|between:0,90',
+            'duolingo_overall' => 'nullable|numeric|between:0,160',
+            'duolingo_listening' => 'nullable|numeric|between:0,160',
+            'duolingo_reading' => 'nullable|numeric|between:0,160',
+            'duolingo_writing' => 'nullable|numeric|between:0,160',
+            'duolingo_speaking' => 'nullable|numeric|between:0,160',
+            'source' => 'nullable|string|max:255',
+            'remarks' => 'nullable|string',
+            'status' => 'nullable|in:new,contacted,qualified,converted,rejected',
+            'assigned_to' => 'nullable|exists:users,id',
+            'employementhistory' => 'nullable|array',
+            'employementhistory.*.join_date' => 'nullable|date',
+            'employementhistory.*.left_date' => 'nullable|date',
+            'employementhistory.*.company_name' => 'nullable|string',
+            'employementhistory.*.job_position' => 'nullable|string',
+            'employementhistory.*.job_city' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Update lead basic information
+            $leadData = $request->except(['employementhistory']);
+            $lead->update($leadData);
+
+            // Update employment history
+            if ($request->has('employementhistory') && is_array($request->employementhistory)) {
+                // Delete existing employment history
+                $lead->employmentHistory()->delete();
+                
+                // Create new employment history records
+                foreach ($request->employementhistory as $employment) {
+                    if (!empty($employment['company_name'])) {
+                        $lead->employmentHistory()->create([
+                            'join_date' => $employment['join_date'] ?? null,
+                            'left_date' => $employment['left_date'] ?? null,
+                            'company_name' => $employment['company_name'],
+                            'job_position' => $employment['job_position'] ?? null,
+                            'job_city' => $employment['job_city'] ?? null,
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('leads.show', $lead->id)
+                           ->with('success', 'Lead updated successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return back()->with('error', 'Error updating lead: ' . $e->getMessage())
+                        ->withInput();
+        }
+    }
+
+    /**
      * Test external API connection
      */
     public function testExternalApi()

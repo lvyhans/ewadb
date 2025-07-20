@@ -3,7 +3,7 @@
 @section('page-title', 'Application Details')
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div class="mx-auto">
     <!-- Header -->
     <div class="glass-effect rounded-2xl shadow-xl border border-white/20 p-6 mb-6">
         <div class="flex items-center justify-between">
@@ -251,7 +251,10 @@
                             <div id="journey-{{ $admission['admissions_id'] }}" class="journey-section hidden border-t pt-4 mt-4">
                                 @php
                                     $journey = $journeyData[$admission['admissions_id']];
-                                    $journeySteps = $journey['journey'] ?? [];
+                                    $journeyInfo = $journey['journey'] ?? [];
+                                    $journeyFull = $journeyInfo['journey_full'] ?? [];
+                                    $journeyDone = $journeyInfo['journey_done'] ?? [];
+                                    $admissionInfo = $journey['admission'] ?? [];
                                 @endphp
                                 
                                 <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -261,33 +264,153 @@
                                     Application Journey
                                 </h4>
                                 
-                                @if(!empty($journeySteps))
-                                    <div class="space-y-4">
-                                        @foreach($journeySteps as $step)
-                                            <div class="flex items-start space-x-4">
-                                                <div class="flex-shrink-0">
-                                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                                        <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                @if(!empty($journeyFull))
+                                    <!-- Progress Overview -->
+                                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                                        @php
+                                            $totalSteps = count($journeyFull);
+                                            $completedSteps = count($journeyDone);
+                                            $progressPercentage = $totalSteps > 0 ? round(($completedSteps / $totalSteps) * 100) : 0;
+                                        @endphp
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-sm font-medium text-gray-700">Overall Progress</span>
+                                            <span class="text-sm font-medium text-gray-900">{{ $progressPercentage }}%</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: {{ $progressPercentage }}%"></div>
+                                        </div>
+                                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                            <span>{{ $completedSteps }} of {{ $totalSteps }} completed</span>
+                                            <span>{{ $totalSteps - $completedSteps }} remaining</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Journey Steps -->
+                                    <div class="relative">
+                                        <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                                        
+                                        @foreach($journeyFull as $index => $step)
+                                            @php
+                                                $isCompleted = in_array($step, $journeyDone);
+                                                $isActive = !$isCompleted && ($index == 0 || in_array($journeyFull[$index - 1], $journeyDone));
+                                                $stepNumber = $index + 1;
+                                            @endphp
+                                            
+                                            <div class="relative flex items-start mb-8 last:mb-0">
+                                                <!-- Step Icon -->
+                                                <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold z-10 
+                                                    @if($isCompleted) bg-green-500
+                                                    @elseif($isActive) bg-blue-500 ring-4 ring-blue-200
+                                                    @else bg-gray-400
+                                                    @endif">
+                                                    @if($isCompleted)
+                                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                                                         </svg>
-                                                    </div>
+                                                    @elseif($isActive)
+                                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                                        </svg>
+                                                    @else
+                                                        {{ $stepNumber }}
+                                                    @endif
                                                 </div>
-                                                <div class="flex-1">
-                                                    <div class="flex justify-between items-start">
-                                                        <div>
-                                                            <p class="text-sm font-medium text-gray-900">{{ $step['status'] ?? 'Unknown Status' }}</p>
-                                                            @if(!empty($step['remarks']))
-                                                                <p class="text-sm text-gray-600 mt-1">{{ $step['remarks'] }}</p>
-                                                            @endif
+                                                
+                                                <!-- Step Content -->
+                                                <div class="ml-6 flex-1">
+                                                    <div class="bg-white rounded-lg p-4 border-l-4 shadow-sm
+                                                        @if($isCompleted) border-green-500 bg-green-50
+                                                        @elseif($isActive) border-blue-500 bg-blue-50
+                                                        @else border-gray-300 bg-gray-50
+                                                        @endif">
+                                                        
+                                                        <div class="flex items-center justify-between mb-2">
+                                                            <h5 class="font-semibold text-gray-900">{{ $step }}</h5>
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                                                @if($isCompleted) bg-green-100 text-green-800
+                                                                @elseif($isActive) bg-blue-100 text-blue-800
+                                                                @else bg-gray-100 text-gray-800
+                                                                @endif">
+                                                                @if($isCompleted) Completed
+                                                                @elseif($isActive) In Progress
+                                                                @else Pending
+                                                                @endif
+                                                            </span>
                                                         </div>
-                                                        <span class="text-xs text-gray-500">
-                                                            {{ isset($step['created']) ? \Carbon\Carbon::parse($step['created'])->format('M d, Y H:i') : 'N/A' }}
-                                                        </span>
+                                                        
+                                                        <p class="text-sm text-gray-600 mb-2">
+                                                            Step {{ $stepNumber }} of {{ $totalSteps }}
+                                                            @if($isActive)
+                                                                - Currently in progress
+                                                            @elseif($isCompleted)
+                                                                - Completed successfully
+                                                            @else
+                                                                - Waiting to start
+                                                            @endif
+                                                        </p>
+
+                                                        @if($isCompleted && isset($admissionInfo))
+                                                            @php
+                                                                $stepDetails = '';
+                                                                switch($step) {
+                                                                    case 'OFFER APPLIED':
+                                                                        if($admissionInfo['mark_complete']) $stepDetails = 'Application marked as complete';
+                                                                        break;
+                                                                    case 'OFFER UPLOAD':
+                                                                        if(isset($admissionInfo['offer_letter']['created'])) 
+                                                                            $stepDetails = 'Offer letter uploaded on ' . \Carbon\Carbon::parse($admissionInfo['offer_letter']['created'])->format('M d, Y');
+                                                                        break;
+                                                                    case 'TT RECEIPT':
+                                                                        if(isset($admissionInfo['tt_info']['tt_receipt_date'])) 
+                                                                            $stepDetails = 'TT receipt on ' . \Carbon\Carbon::parse($admissionInfo['tt_info']['tt_receipt_date'])->format('M d, Y');
+                                                                        break;
+                                                                    case 'TT MAIL':
+                                                                        if(isset($admissionInfo['tt_info']['tt_receipt_mail_date'])) 
+                                                                            $stepDetails = 'TT mail sent on ' . \Carbon\Carbon::parse($admissionInfo['tt_info']['tt_receipt_mail_date'])->format('M d, Y');
+                                                                        break;
+                                                                    case 'INSTITUTE PAYMENT':
+                                                                        if(isset($admissionInfo['institute_payment']['date'])) 
+                                                                            $stepDetails = 'Payment processed on ' . \Carbon\Carbon::parse($admissionInfo['institute_payment']['date'])->format('M d, Y');
+                                                                        break;
+                                                                    case 'VISA STATUS':
+                                                                        if(!empty($admissionInfo['visa_info']['visa_status'])) 
+                                                                            $stepDetails = 'Status: ' . $admissionInfo['visa_info']['visa_status'];
+                                                                        break;
+                                                                }
+                                                            @endphp
+                                                            @if($stepDetails)
+                                                                <p class="text-xs text-gray-500 mt-1">{{ $stepDetails }}</p>
+                                                            @endif
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </div>
                                         @endforeach
                                     </div>
+
+                                    <!-- Current Status Summary -->
+                                    @if($completedSteps < $totalSteps)
+                                        @php
+                                            $nextStep = null;
+                                            foreach($journeyFull as $index => $step) {
+                                                if(!in_array($step, $journeyDone)) {
+                                                    $nextStep = $step;
+                                                    break;
+                                                }
+                                            }
+                                        @endphp
+                                        @if($nextStep)
+                                            <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                <h5 class="font-semibold text-blue-900 mb-1">Next Step</h5>
+                                                <p class="text-sm text-blue-700">{{ $nextStep }}</p>
+                                            </div>
+                                        @endif
+                                    @else
+                                        <div class="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
+                                            <h5 class="font-semibold text-green-900 mb-1">Journey Complete</h5>
+                                            <p class="text-sm text-green-700">All journey steps have been completed successfully!</p>
+                                        </div>
+                                    @endif
                                 @else
                                     <p class="text-gray-500 text-sm">No journey data available for this admission.</p>
                                 @endif

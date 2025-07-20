@@ -4,7 +4,7 @@
 @section('page-title', 'Add New User')
 
 @section('content')
-    <div class="max-w-2xl mx-auto">
+    <div class="mx-auto">
         <!-- Header -->
         <div class="mb-8">
             <div class="flex items-center space-x-4">

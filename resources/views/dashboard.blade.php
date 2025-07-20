@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="min-h-screen from-slate-50 via-blue-50 to-indigo-100">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         <!-- Welcome Hero Section -->
         <div class="mb-8">
@@ -25,7 +25,7 @@
                                     <h1 class="text-4xl font-bold text-gray-900 mb-2">
                                         Welcome back, <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{{ auth()->user()->name }}</span>! 👋
                                     </h1>
-                                    <p class="text-lg text-gray-600">B2B CRM & Management System</p>
+                                    <p class="text-lg text-gray-600">B2B Management System</p>
                                 </div>
                             </div>
                             <div class="flex flex-col sm:flex-row gap-4">

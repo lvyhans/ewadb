@@ -80,9 +80,21 @@ class DashboardController extends Controller
         // Get tasks statistics
         try {
             $taskService = app(TaskManagementService::class);
-            $taskData = $taskService->fetchTasks(['status' => 'pending']);
-            $pendingTasks = $taskData['data']['total_count'] ?? 0;
+            
+            // Prepare parameters based on user role
+            $taskParams = [
+                'return' => 'count',
+                'task_status' => 'open'
+            ];
+            
+            // Set user parameters based on role
+            $taskParams['b2b_admin_id'] = auth()->id();
+            $taskParams['b2b_member_id'] = 0;
+            
+            $taskData = $taskService->fetchTasks($taskParams);
+            $pendingTasks = $taskData['count'] ?? 0;
         } catch (\Exception $e) {
+            \Log::error('Dashboard task fetch error: ' . $e->getMessage());
             $pendingTasks = 0;
         }
 
@@ -188,9 +200,19 @@ class DashboardController extends Controller
         // Get tasks statistics (external API - user-specific)
         try {
             $taskService = app(TaskManagementService::class);
-            $taskData = $taskService->fetchTasks(['status' => 'pending']);
-            $pendingTasks = $taskData['data']['total_count'] ?? 0;
+            
+            // Prepare parameters for regular admin
+            $taskParams = [
+                'return' => 'count',
+                'task_status' => 'open',
+                'b2b_admin_id' => $user->id,
+                'b2b_member_id' => 0
+            ];
+            
+            $taskData = $taskService->fetchTasks($taskParams);
+            $pendingTasks = $taskData['count'] ?? 0;
         } catch (\Exception $e) {
+            \Log::error('Dashboard task fetch error for admin: ' . $e->getMessage());
             $pendingTasks = 0;
         }
 
@@ -308,9 +330,19 @@ class DashboardController extends Controller
         // Get tasks statistics (external API - user-specific)
         try {
             $taskService = app(TaskManagementService::class);
-            $taskData = $taskService->fetchTasks(['status' => 'pending']);
-            $pendingTasks = $taskData['data']['total_count'] ?? 0;
+            
+            // Prepare parameters for member
+            $taskParams = [
+                'return' => 'count',
+                'task_status' => 'open',
+                'b2b_member_id' => $user->id,
+                'b2b_admin_id' => $user->admin_id ?? 1
+            ];
+            
+            $taskData = $taskService->fetchTasks($taskParams);
+            $pendingTasks = $taskData['count'] ?? 0;
         } catch (\Exception $e) {
+            \Log::error('Dashboard task fetch error for member: ' . $e->getMessage());
             $pendingTasks = 0;
         }
 

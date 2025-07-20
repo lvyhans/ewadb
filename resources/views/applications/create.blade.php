@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
         <div class="mb-8">
             <div class="flex items-center justify-between">
@@ -246,8 +246,10 @@
                         </div>
                         
                         <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Email Address</label>
-                            <input type="email" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="email" placeholder="Enter email address">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Email Address <span class="text-red-500">*</span>
+                            </label>
+                            <input type="email" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="email" placeholder="Enter email address" required>
                         </div>
                         
                         <div class="space-y-2">
@@ -284,8 +286,10 @@
                     
                     <div class="mt-6">
                         <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Address</label>
-                            <input type="text" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="address" placeholder="Enter full address">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Address <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm transition-all" name="address" placeholder="Enter full address" required>
                         </div>
                     </div>
                 </div>
@@ -698,6 +702,62 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Email validation
+    const emailInput = document.querySelector('input[name="email"]');
+    if (emailInput) {
+        emailInput.addEventListener('input', function(e) {
+            const email = e.target.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (email.length > 0) {
+                if (emailRegex.test(email)) {
+                    e.target.classList.remove('border-red-300', 'bg-red-50');
+                    e.target.classList.add('border-green-300', 'bg-green-50');
+                } else {
+                    e.target.classList.remove('border-green-300', 'bg-green-50');
+                    e.target.classList.add('border-red-300', 'bg-red-50');
+                }
+            } else {
+                e.target.classList.remove('border-red-300', 'bg-red-50', 'border-green-300', 'bg-green-50');
+            }
+        });
+        
+        emailInput.addEventListener('blur', function(e) {
+            const email = e.target.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (email && !emailRegex.test(email)) {
+                showAlert('Please enter a valid email address', 'error');
+            }
+        });
+    }
+    
+    // Address validation
+    const addressInput = document.querySelector('input[name="address"]');
+    if (addressInput) {
+        addressInput.addEventListener('input', function(e) {
+            const address = e.target.value.trim();
+            
+            if (address.length > 0) {
+                if (address.length >= 10) {
+                    e.target.classList.remove('border-red-300', 'bg-red-50');
+                    e.target.classList.add('border-green-300', 'bg-green-50');
+                } else {
+                    e.target.classList.remove('border-green-300', 'bg-green-50');
+                    e.target.classList.add('border-red-300', 'bg-red-50');
+                }
+            } else {
+                e.target.classList.remove('border-red-300', 'bg-red-50', 'border-green-300', 'bg-green-50');
+            }
+        });
+        
+        addressInput.addEventListener('blur', function(e) {
+            const address = e.target.value.trim();
+            if (address && address.length < 10) {
+                showAlert('Address must be at least 10 characters long', 'error');
+            }
+        });
+    }
+    
     // Check for multiple course selection from course finder
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('from') === 'course-finder' && urlParams.get('multiple') === 'true') {
@@ -797,6 +857,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!/^\d{10}$/.test(phoneValue)) {
                     showAlert('Phone number must be exactly 10 digits', 'error');
                     phoneInput.focus();
+                    return false;
+                }
+            }
+            
+            // Validate email before submission
+            const emailInput = document.querySelector('input[name="email"]');
+            if (emailInput) {
+                const emailValue = emailInput.value.trim();
+                if (!emailValue) {
+                    showAlert('Email address is required', 'error');
+                    emailInput.focus();
+                    return false;
+                }
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(emailValue)) {
+                    showAlert('Please enter a valid email address', 'error');
+                    emailInput.focus();
+                    return false;
+                }
+            }
+            
+            // Validate address before submission
+            const addressInput = document.querySelector('input[name="address"]');
+            if (addressInput) {
+                const addressValue = addressInput.value.trim();
+                if (!addressValue) {
+                    showAlert('Address is required', 'error');
+                    addressInput.focus();
+                    return false;
+                }
+                if (addressValue.length < 10) {
+                    showAlert('Address must be at least 10 characters long', 'error');
+                    addressInput.focus();
                     return false;
                 }
             }

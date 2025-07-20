@@ -55,6 +55,9 @@ class ExternalApiService
                     ])
                     ->post($apiUrl, $leadData);
 
+                // Enhanced logging of request and response for leads
+                $this->logLeadApiRequestResponse($leadData, $response, $apiUrl, $lead, $attempt);
+
                 if ($response->successful()) {
                     Log::info('Lead successfully sent to external API', [
                         'lead_id' => $lead->id,
@@ -160,6 +163,9 @@ class ExternalApiService
                         'Accept' => 'application/json',
                     ])
                     ->post($apiUrl, $applicationData);
+
+                // Enhanced logging of request and response
+                $this->logApiRequestResponse($applicationData, $response, $apiUrl, $application, $attempt);
 
                 if ($response->successful()) {
                     Log::info('Application successfully sent to external API', [
@@ -347,11 +353,7 @@ class ExternalApiService
             'gender' => $additionalData['gender'] ?? '',
             'passport_no' => $additionalData['passport_no'] ?? '',
             'marital_status' => $additionalData['marital_status'] ?? '',
-            'preferred_country' => $application->preferred_country,
-            'preferred_city' => $application->preferred_city,
-            'preferred_college' => $application->preferred_college,
             'course_level' => $application->course_level,
-            'field_of_study' => $application->field_of_study,
             
             // Course options from course finder
             'admissions' => $application->courseOptions->map(function ($courseOption) {
@@ -666,22 +668,6 @@ class ExternalApiService
     }
 
     /**
-     * Get test countries data
-     */
-    private function getTestCountries(): array
-    {
-        return [
-            ['country_name' => 'Canada'],
-            ['country_name' => 'Australia'],
-            ['country_name' => 'United Kingdom'],
-            ['country_name' => 'United States'],
-            ['country_name' => 'Germany'],
-            ['country_name' => 'France'],
-            ['country_name' => 'New Zealand'],
-        ];
-    }
-
-    /**
      * Get cities by country from external API
      */
     public function getCitiesByCountry(string $country): array
@@ -717,38 +703,6 @@ class ExternalApiService
             ]);
             return $this->getTestCities($country);
         }
-    }
-
-    /**
-     * Get test cities data
-     */
-    private function getTestCities(string $country): array
-    {
-        $testCities = [
-            'Canada' => [
-                ['city_name' => 'Toronto'],
-                ['city_name' => 'Vancouver'],
-                ['city_name' => 'Montreal'],
-                ['city_name' => 'Calgary'],
-                ['city_name' => 'Ottawa'],
-            ],
-            'Australia' => [
-                ['city_name' => 'Sydney'],
-                ['city_name' => 'Melbourne'],
-                ['city_name' => 'Brisbane'],
-                ['city_name' => 'Perth'],
-                ['city_name' => 'Adelaide'],
-            ],
-            'United Kingdom' => [
-                ['city_name' => 'London'],
-                ['city_name' => 'Manchester'],
-                ['city_name' => 'Birmingham'],
-                ['city_name' => 'Edinburgh'],
-                ['city_name' => 'Glasgow'],
-            ]
-        ];
-
-        return $testCities[$country] ?? [['city_name' => 'Default City']];
     }
 
     /**
@@ -792,41 +746,6 @@ class ExternalApiService
             ]);
             return $this->getTestColleges($country, $city);
         }
-    }
-
-    /**
-     * Get test colleges data
-     */
-    private function getTestColleges(string $country, string $city): array
-    {
-        $testColleges = [
-            'Canada' => [
-                'Toronto' => [
-                    ['college_name' => 'University of Toronto'],
-                    ['college_name' => 'Ryerson University'],
-                    ['college_name' => 'York University'],
-                ],
-                'Vancouver' => [
-                    ['college_name' => 'University of British Columbia'],
-                    ['college_name' => 'Simon Fraser University'],
-                    ['college_name' => 'British Columbia Institute of Technology'],
-                ]
-            ],
-            'Australia' => [
-                'Sydney' => [
-                    ['college_name' => 'University of Sydney'],
-                    ['college_name' => 'University of New South Wales'],
-                    ['college_name' => 'Macquarie University'],
-                ],
-                'Melbourne' => [
-                    ['college_name' => 'University of Melbourne'],
-                    ['college_name' => 'Monash University'],
-                    ['college_name' => 'RMIT University'],
-                ]
-            ]
-        ];
-
-        return $testColleges[$country][$city] ?? [['college_name' => 'Default College']];
     }
 
     /**
@@ -883,6 +802,89 @@ class ExternalApiService
             ]);
             return $this->getTestCourses($country, $city, $college);
         }
+    }
+
+    /**
+     * Get test countries data
+     */
+    private function getTestCountries(): array
+    {
+        return [
+            ['country_name' => 'Canada'],
+            ['country_name' => 'Australia'],
+            ['country_name' => 'United Kingdom'],
+            ['country_name' => 'United States'],
+            ['country_name' => 'Germany'],
+            ['country_name' => 'France'],
+            ['country_name' => 'New Zealand'],
+        ];
+    }
+
+    /**
+     * Get test cities data
+     */
+    private function getTestCities(string $country): array
+    {
+        $testCities = [
+            'Canada' => [
+                ['city_name' => 'Toronto'],
+                ['city_name' => 'Vancouver'],
+                ['city_name' => 'Montreal'],
+                ['city_name' => 'Calgary'],
+                ['city_name' => 'Ottawa'],
+            ],
+            'Australia' => [
+                ['city_name' => 'Sydney'],
+                ['city_name' => 'Melbourne'],
+                ['city_name' => 'Brisbane'],
+                ['city_name' => 'Perth'],
+                ['city_name' => 'Adelaide'],
+            ],
+            'United Kingdom' => [
+                ['city_name' => 'London'],
+                ['city_name' => 'Manchester'],
+                ['city_name' => 'Birmingham'],
+                ['city_name' => 'Edinburgh'],
+                ['city_name' => 'Glasgow'],
+            ]
+        ];
+
+        return $testCities[$country] ?? [['city_name' => 'Default City']];
+    }
+
+    /**
+     * Get test colleges data
+     */
+    private function getTestColleges(string $country, string $city): array
+    {
+        $testColleges = [
+            'Canada' => [
+                'Toronto' => [
+                    ['college_name' => 'University of Toronto'],
+                    ['college_name' => 'Ryerson University'],
+                    ['college_name' => 'York University'],
+                ],
+                'Vancouver' => [
+                    ['college_name' => 'University of British Columbia'],
+                    ['college_name' => 'Simon Fraser University'],
+                    ['college_name' => 'British Columbia Institute of Technology'],
+                ]
+            ],
+            'Australia' => [
+                'Sydney' => [
+                    ['college_name' => 'University of Sydney'],
+                    ['college_name' => 'University of New South Wales'],
+                    ['college_name' => 'Macquarie University'],
+                ],
+                'Melbourne' => [
+                    ['college_name' => 'University of Melbourne'],
+                    ['college_name' => 'Monash University'],
+                    ['college_name' => 'RMIT University'],
+                ]
+            ]
+        ];
+
+        return $testColleges[$country][$city] ?? [['college_name' => 'Default College']];
     }
 
     /**
@@ -1139,6 +1141,264 @@ class ExternalApiService
             Log::error('Failed to log lead API payload to file', [
                 'lead_id' => $lead->id ?? 'unknown',
                 'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Enhanced logging for API requests and responses
+     */
+    private function logApiRequestResponse(array $payload, $response, string $url, $application, int $attempt): void
+    {
+        try {
+            // Create comprehensive log entry
+            $logEntry = [
+                'timestamp' => now()->toISOString(),
+                'application_id' => $application->id,
+                'application_number' => $application->application_number,
+                'applicant_name' => $application->name,
+                'applicant_email' => $application->email,
+                'applicant_phone' => $application->phone,
+                'created_by' => $application->creator->name ?? 'Unknown',
+                'created_by_id' => $application->creator->id ?? null,
+                'attempt_number' => $attempt,
+                'api_endpoint' => $url,
+                'request_payload' => $payload,
+                'payload_size' => strlen(json_encode($payload)),
+                'documents_count' => $application->documents->count(),
+                'course_options_count' => $application->courseOptions->count(),
+                'employment_history_count' => $application->employmentHistory->count(),
+                'response' => [
+                    'status_code' => $response->status(),
+                    'headers' => $response->headers(),
+                    'body' => $response->body(),
+                    'successful' => $response->successful(),
+                    'json' => $response->json() ?? null,
+                ],
+                'system_info' => [
+                    'php_version' => PHP_VERSION,
+                    'laravel_version' => app()->version(),
+                    'user_agent' => request()->header('User-Agent'),
+                    'ip_address' => request()->ip(),
+                ]
+            ];
+
+            // Log to dedicated API logs file
+            $this->writeToApiLogFile($logEntry);
+            
+            // Also log to Laravel logs with different levels based on response
+            if ($response->successful()) {
+                Log::info('API Request Successful', [
+                    'application_id' => $application->id,
+                    'url' => $url,
+                    'status' => $response->status(),
+                    'attempt' => $attempt
+                ]);
+            } else {
+                Log::error('API Request Failed', [
+                    'application_id' => $application->id,
+                    'url' => $url,
+                    'status' => $response->status(),
+                    'response_body' => $response->body(),
+                    'attempt' => $attempt
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to log API request/response', [
+                'application_id' => $application->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Write API log entry to dedicated file
+     */
+    private function writeToApiLogFile(array $logEntry): void
+    {
+        try {
+            $logPath = storage_path('logs/api_requests.json');
+            
+            // Ensure directory exists
+            $logDir = dirname($logPath);
+            if (!is_dir($logDir)) {
+                mkdir($logDir, 0755, true);
+            }
+
+            // Read existing logs
+            $existingLogs = [];
+            if (file_exists($logPath)) {
+                $existingContent = file_get_contents($logPath);
+                $existingLogs = json_decode($existingContent, true) ?? [];
+            }
+
+            // Initialize structure if needed
+            if (!isset($existingLogs['requests'])) {
+                $existingLogs = [
+                    'note' => 'Comprehensive log of all API requests to Tarun Demo API when creating applications',
+                    'created_at' => now()->toISOString(),
+                    'last_updated' => now()->toISOString(),
+                    'total_count' => 0,
+                    'successful_requests' => 0,
+                    'failed_requests' => 0,
+                    'requests' => []
+                ];
+            }
+
+            // Add new log entry
+            $existingLogs['requests'][] = $logEntry;
+            $existingLogs['last_updated'] = now()->toISOString();
+            $existingLogs['total_count'] = count($existingLogs['requests']);
+            
+            // Update counters
+            if ($logEntry['response']['successful']) {
+                $existingLogs['successful_requests'] = ($existingLogs['successful_requests'] ?? 0) + 1;
+            } else {
+                $existingLogs['failed_requests'] = ($existingLogs['failed_requests'] ?? 0) + 1;
+            }
+
+            // Keep only last 100 requests to prevent file from getting too large
+            if (count($existingLogs['requests']) > 100) {
+                $existingLogs['requests'] = array_slice($existingLogs['requests'], -100);
+                $existingLogs['total_count'] = 100;
+            }
+
+            // Write to file with proper formatting
+            file_put_contents($logPath, json_encode($existingLogs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        } catch (\Exception $e) {
+            Log::error('Failed to write API log file', [
+                'error' => $e->getMessage(),
+                'log_path' => $logPath ?? 'unknown'
+            ]);
+        }
+    }
+
+    /**
+     * Enhanced logging for lead API requests and responses
+     */
+    private function logLeadApiRequestResponse(array $payload, $response, string $url, $lead, int $attempt): void
+    {
+        try {
+            // Create comprehensive log entry for leads
+            $logEntry = [
+                'timestamp' => now()->toISOString(),
+                'lead_id' => $lead->id,
+                'lead_ref_no' => $lead->ref_no,
+                'lead_name' => $lead->name,
+                'lead_email' => $lead->email,
+                'lead_phone' => $lead->phone,
+                'created_by' => $lead->creator->name ?? 'Unknown',
+                'created_by_id' => $lead->creator->id ?? null,
+                'attempt_number' => $attempt,
+                'api_endpoint' => $url,
+                'request_payload' => $payload,
+                'payload_size' => strlen(json_encode($payload)),
+                'employment_history_count' => $lead->employmentHistory->count(),
+                'response' => [
+                    'status_code' => $response->status(),
+                    'headers' => $response->headers(),
+                    'body' => $response->body(),
+                    'successful' => $response->successful(),
+                    'json' => $response->json() ?? null,
+                ],
+                'system_info' => [
+                    'php_version' => PHP_VERSION,
+                    'laravel_version' => app()->version(),
+                    'user_agent' => request()->header('User-Agent'),
+                    'ip_address' => request()->ip(),
+                ]
+            ];
+
+            // Log to dedicated lead API logs file
+            $this->writeToLeadApiLogFile($logEntry);
+            
+            // Also log to Laravel logs with different levels based on response
+            if ($response->successful()) {
+                Log::info('Lead API Request Successful', [
+                    'lead_id' => $lead->id,
+                    'url' => $url,
+                    'status' => $response->status(),
+                    'attempt' => $attempt
+                ]);
+            } else {
+                Log::error('Lead API Request Failed', [
+                    'lead_id' => $lead->id,
+                    'url' => $url,
+                    'status' => $response->status(),
+                    'response_body' => $response->body(),
+                    'attempt' => $attempt
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to log lead API request/response', [
+                'lead_id' => $lead->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Write lead API log entry to dedicated file
+     */
+    private function writeToLeadApiLogFile(array $logEntry): void
+    {
+        try {
+            $logPath = storage_path('logs/lead_api_requests.json');
+            
+            // Ensure directory exists
+            $logDir = dirname($logPath);
+            if (!is_dir($logDir)) {
+                mkdir($logDir, 0755, true);
+            }
+
+            // Read existing logs
+            $existingLogs = [];
+            if (file_exists($logPath)) {
+                $existingContent = file_get_contents($logPath);
+                $existingLogs = json_decode($existingContent, true) ?? [];
+            }
+
+            // Initialize structure if needed
+            if (!isset($existingLogs['requests'])) {
+                $existingLogs = [
+                    'note' => 'Comprehensive log of all lead API requests to Tarun Demo API when creating leads',
+                    'created_at' => now()->toISOString(),
+                    'last_updated' => now()->toISOString(),
+                    'total_count' => 0,
+                    'successful_requests' => 0,
+                    'failed_requests' => 0,
+                    'requests' => []
+                ];
+            }
+
+            // Add new log entry
+            $existingLogs['requests'][] = $logEntry;
+            $existingLogs['last_updated'] = now()->toISOString();
+            $existingLogs['total_count'] = count($existingLogs['requests']);
+            
+            // Update counters
+            if ($logEntry['response']['successful']) {
+                $existingLogs['successful_requests'] = ($existingLogs['successful_requests'] ?? 0) + 1;
+            } else {
+                $existingLogs['failed_requests'] = ($existingLogs['failed_requests'] ?? 0) + 1;
+            }
+
+            // Keep only last 100 requests to prevent file from getting too large
+            if (count($existingLogs['requests']) > 100) {
+                $existingLogs['requests'] = array_slice($existingLogs['requests'], -100);
+                $existingLogs['total_count'] = 100;
+            }
+
+            // Write to file with proper formatting
+            file_put_contents($logPath, json_encode($existingLogs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        } catch (\Exception $e) {
+            Log::error('Failed to write lead API log file', [
+                'error' => $e->getMessage(),
+                'log_path' => $logPath ?? 'unknown'
             ]);
         }
     }

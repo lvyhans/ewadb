@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="py-12 bg-white min-h-screen">
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 bg-white">
+    <div class="mx-auto sm:px-6 lg:px-8 bg-white">
         <!-- Header -->
         <div class="mb-6 bg-white p-6 rounded-lg shadow-sm">
             <div class="flex justify-between items-center">

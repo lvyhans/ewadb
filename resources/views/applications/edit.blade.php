@@ -3,7 +3,7 @@
 @section('page-title', 'Edit Application')
 
 @section('content')
-<div class="max-w-6xl mx-auto">
+<div class="mx-auto">
     <!-- Header -->
     <div class="glass-effect rounded-2xl shadow-xl border border-white/20 p-6 mb-6">
         <div class="flex items-center justify-between">

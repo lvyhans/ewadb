@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="min-h-screen bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Page Header -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
             <div class="px-6 py-8">
@@ -196,7 +196,15 @@
             </div>
             <div class="p-6">
                 <form id="filter-form" method="GET" action="{{ route('task-management.index') }}">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                        <div class="space-y-2">
+                            <label for="task_id" class="block text-sm font-semibold text-gray-700">Task ID</label>
+                            <input type="text" id="task_id" name="task_id" 
+                                   value="{{ $filters['task_id'] ?? request()->query('task_id', '') }}" 
+                                   placeholder="Enter Task ID"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-gray-50 focus:bg-white">
+                        </div>
+                        
                         <div class="space-y-2">
                             <label for="visa_form_id" class="block text-sm font-semibold text-gray-700">Visa Form ID</label>
                             <input type="number" id="visa_form_id" name="visa_form_id" 
@@ -277,7 +285,7 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         @if($success && !empty($tasks))
                             @foreach($tasks as $task)
-                                <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                <tr class="hover:bg-gray-50 transition-colors duration-150 task-row" data-task-id="{{ $task['id'] ?? 'N/A' }}">
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
                                             <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
@@ -563,7 +571,15 @@ window.clearFilters = function() {
     console.log('clearFilters called');
     const form = document.getElementById('filter-form');
     if (form) {
+        // Clear all input fields
         form.reset();
+        
+        // Clear task_id separately (important for notification links)
+        const taskIdInput = document.getElementById('task_id');
+        if (taskIdInput) {
+            taskIdInput.value = '';
+        }
+        
         // Set default values
         const statusSelect = document.getElementById('task_status');
         if (statusSelect) {
@@ -753,8 +769,6 @@ window.showUploadError = function(message) {
     }
 }
 
- 
-
 // DOM Ready functionality
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Setting up event listeners');
@@ -849,6 +863,44 @@ document.addEventListener('DOMContentLoaded', function() {
             window.closeUploadModal();
         }
     });
+    
+    // Handle highlighting task from notification
+    const urlParams = new URLSearchParams(window.location.search);
+    const taskId = urlParams.get('task_id');
+    
+    if (taskId) {
+        console.log('Task ID from notification:', taskId);
+        
+        // Find the task row by task ID
+        setTimeout(() => {
+            const taskRows = document.querySelectorAll('.task-row');
+            let found = false;
+            
+            taskRows.forEach(row => {
+                if (row.dataset.taskId === taskId) {
+                    // Highlight the row
+                    row.classList.add('bg-blue-50');
+                    row.classList.add('border');
+                    row.classList.add('border-blue-300');
+                    row.classList.add('animate-pulse');
+                    
+                    // Scroll to the row
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    found = true;
+                    
+                    // Stop animation after 3 seconds
+                    setTimeout(() => {
+                        row.classList.remove('animate-pulse');
+                    }, 3000);
+                }
+            });
+            
+            // If task not found in current page, we already have the filter applied
+            if (!found) {
+                console.log('Task not visible in current page, filter is applied');
+            }
+        }, 500); // Small delay to ensure the table is fully loaded
+    }
     
     console.log('DOM setup complete');
 });

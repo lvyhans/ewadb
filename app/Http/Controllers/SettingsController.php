@@ -105,7 +105,7 @@ class SettingsController extends Controller
 
         $defaultSettings = [
             // General Settings
-            'app_name' => ['B2B CRM System', 'string', 'general', 'Application name displayed in headers and emails', true],
+            'app_name' => ['B2B System', 'string', 'general', 'Application name displayed in headers and emails', true],
             'app_description' => ['Advanced Customer Relationship Management System for B2B Operations', 'string', 'general', 'Brief description of the application', true],
             'timezone' => ['UTC', 'string', 'general', 'Default timezone for the application', false],
             'date_format' => ['Y-m-d', 'string', 'general', 'Default date format', false],
@@ -115,7 +115,7 @@ class SettingsController extends Controller
             'language' => ['en', 'string', 'general', 'Default system language', false],
             
             // Email Settings
-            'mail_from_name' => ['B2B CRM System', 'string', 'email', 'Default sender name for emails', false],
+            'mail_from_name' => ['B2B System', 'string', 'email', 'Default sender name for emails', false],
             'mail_from_address' => ['noreply@b2bcrm.com', 'string', 'email', 'Default sender email address', false],
             'enable_email_notifications' => [true, 'boolean', 'email', 'Enable email notifications', false],
             'email_signature' => ['Best regards,\nB2B CRM Team', 'string', 'email', 'Default email signature', false],

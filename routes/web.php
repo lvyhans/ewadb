@@ -83,9 +83,8 @@ Route::middleware('auth')->group(function () {
         })->name('create');
         Route::post('/store', [LeadController::class, 'store'])->name('store');
         Route::get('/{id}', [LeadController::class, 'webShow'])->name('show');
-        Route::get('/{id}/edit', function ($id) {
-            return view('leads.edit', compact('id'));
-        })->name('edit');
+        Route::get('/{id}/edit', [LeadController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [LeadController::class, 'webUpdate'])->name('update');
         
         // Follow-up Routes for a specific lead
         Route::post('/{lead}/followups', [FollowupController::class, 'store'])->name('followups.store');
@@ -118,6 +117,11 @@ Route::middleware('auth')->group(function () {
         // Test application creation
         Route::get('/test-creation', [ApplicationController::class, 'testApplicationCreation'])->name('test-creation');
         
+        // API Logs Viewer (for debugging API calls to Tarun Demo)
+        Route::get('/api-logs', [ApplicationController::class, 'viewApiLogs'])->name('view-api-logs');
+        Route::get('/api-logs/download', [ApplicationController::class, 'downloadApiLogs'])->name('download-api-logs');
+        Route::get('/api-logs/clear', [ApplicationController::class, 'clearApiLogs'])->name('clear-api-logs');
+        
         // Test API payload for specific application
         Route::get('/{id}/test-api-payload', [ApplicationController::class, 'testApplicationApiPayload'])->name('test-api-payload');
         
@@ -130,6 +134,7 @@ Route::middleware('auth')->group(function () {
         // API application view - single detailed view only
         Route::get('/api/{visa_form_id}', [ApplicationController::class, 'showApiApplicationDetails'])->name('show-api');
         Route::get('/api/{visa_form_id}/details-json', [ApplicationController::class, 'getApplicationDetails'])->name('api-details-json');
+        Route::get('/api/{visa_form_id}/journey', [ApplicationController::class, 'showApplicationJourney'])->name('api-journey');
         
         // Test routes for API responses
         Route::get('/test-application-details', function() {
@@ -317,5 +322,27 @@ Route::get('/debug-journey-integration/{visa_form_id?}', function($visaFormId = 
         ], 500, [], JSON_PRETTY_PRINT);
     }
 })->name('debug-journey-integration');
+
+// Test route for the new formatted journey API
+Route::get('/test-formatted-journey/{applicationId?}', function($applicationId = 187) {
+    try {
+        $controller = new ApplicationController();
+        
+        // Create a request with the application ID
+        $request = new \Illuminate\Http\Request(['application_id' => $applicationId]);
+        
+        // Call the new formatted journey method
+        $response = $controller->getFormattedApplicationJourney($request);
+        
+        return $response;
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Test failed',
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500, [], JSON_PRETTY_PRINT);
+    }
+})->name('test-formatted-journey');
 
 require __DIR__.'/auth.php';

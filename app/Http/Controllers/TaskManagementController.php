@@ -266,6 +266,18 @@ class TaskManagementController extends Controller
             $params['visa_form_id'] = $request->input('visa_form_id');
         }
         
+        // Add task_id filter if provided (from notification link)
+        if ($request->filled('task_id')) {
+            $taskId = $request->input('task_id');
+            
+            // Ensure we're using a numeric task ID
+            if (!is_numeric($taskId) && preg_match('/\d+/', $taskId, $matches)) {
+                $taskId = $matches[0];
+            }
+            
+            $params['task_id'] = $taskId;
+        }
+        
         $params['return'] = 'full'; // Always get full data
         $params['task_status'] = $request->input('task_status', 'open');
         

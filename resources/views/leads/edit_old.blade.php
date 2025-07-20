@@ -4,7 +4,7 @@
 @section('page-title', 'Edit Lead')
 
 @section('content')
-    <div class="max-w-4xl mx-auto">
+    <div class="mx-auto">
         <!-- Header -->
         <div class="mb-8">
             <div class="flex items-center justify-between">
