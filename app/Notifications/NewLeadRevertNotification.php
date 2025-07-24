@@ -9,7 +9,7 @@ use Illuminate\Notifications\Notification;
 use App\Models\Lead;
 use App\Models\LeadRevert;
 
-class NewLeadRevertNotification extends Notification implements ShouldQueue
+class NewLeadRevertNotification extends Notification
 {
     use Queueable;
 

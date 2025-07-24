@@ -317,14 +317,29 @@ class LeadRevertApiController extends Controller
         try {
             $usersToNotify = collect();
 
+            Log::info('Starting notification process', [
+                'lead_id' => $lead->id,
+                'revert_id' => $revert->id,
+                'lead_assigned_to' => $lead->assigned_to,
+                'lead_created_by' => $lead->created_by
+            ]);
+
             // Add the assigned user if exists
             if ($lead->assigned_to && $lead->assignedUser) {
                 $usersToNotify->push($lead->assignedUser);
+                Log::info('Added assigned user to notifications', [
+                    'user_id' => $lead->assignedUser->id,
+                    'user_name' => $lead->assignedUser->name
+                ]);
             }
 
             // Add the lead creator if exists and different from assigned user
             if ($lead->created_by && $lead->creator && $lead->created_by !== $lead->assigned_to) {
                 $usersToNotify->push($lead->creator);
+                Log::info('Added creator to notifications', [
+                    'user_id' => $lead->creator->id,
+                    'user_name' => $lead->creator->name
+                ]);
             }
 
             // Add admins of the users
@@ -333,14 +348,37 @@ class LeadRevertApiController extends Controller
                     // Add admin if not already in the collection
                     if (!$usersToNotify->contains('id', $user->admin->id)) {
                         $usersToNotify->push($user->admin);
+                        Log::info('Added admin to notifications', [
+                            'admin_id' => $user->admin->id,
+                            'admin_name' => $user->admin->name,
+                            'for_user' => $user->id
+                        ]);
                     }
                 }
             });
 
+            Log::info('Users to notify collected', [
+                'total_users' => $usersToNotify->unique('id')->count(),
+                'user_ids' => $usersToNotify->unique('id')->pluck('id')->toArray()
+            ]);
+
             // Send notifications to all users
             $usersToNotify->unique('id')->each(function ($user) use ($lead, $revert) {
                 try {
+                    Log::info('Sending notification to user', [
+                        'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'lead_id' => $lead->id,
+                        'revert_id' => $revert->id
+                    ]);
+                    
                     $user->notify(new NewLeadRevertNotification($lead, $revert));
+                    
+                    Log::info('Notification sent successfully', [
+                        'user_id' => $user->id,
+                        'lead_id' => $lead->id,
+                        'revert_id' => $revert->id
+                    ]);
                 } catch (\Exception $e) {
                     Log::warning('Failed to send notification to user', [
                         'user_id' => $user->id,
