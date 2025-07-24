@@ -1,7 +1,7 @@
 {
     "note": "This file contains actual API payloads sent when applications are created",
-    "last_updated": "2025-07-20T07:39:49.905019Z",
-    "total_count": 2,
+    "last_updated": "2025-07-24T12:38:47.504563Z",
+    "total_count": 3,
     "payloads": [
         {
             "timestamp": "2025-07-20T07:30:11.938175Z",
@@ -214,6 +214,117 @@
                 },
                 "created_at": "2025-07-20T07:39:49.000000Z",
                 "updated_at": "2025-07-20T07:39:49.000000Z"
+            }
+        },
+        {
+            "timestamp": "2025-07-24T12:38:47.503878Z",
+            "application_id": 77,
+            "application_number": "APP-000060",
+            "applicant_name": "Allen Newman",
+            "created_by": "First Admin",
+            "payload": {
+                "type": "application",
+                "application_number": "APP-000060",
+                "lead_ref_no": null,
+                "name": "Allen Newman",
+                "email": "tygupejake@mailinator.com",
+                "phone": "1121683896",
+                "date_of_birth": "1989-01-19",
+                "address": "Velit totam deleniti",
+                "city": "Veniam eius deserun",
+                "gender": "Other",
+                "passport_no": "Debitis est reprehen",
+                "marital_status": "Divorced",
+                "course_level": "bachelor",
+                "created_by_user": {
+                    "id": 1,
+                    "name": "First Admin",
+                    "email": "superadmin@yourcompany.com",
+                    "company": null,
+                    "role": "admin",
+                    "department": null
+                },
+                "admissions": [
+                    {
+                        "country": "United Kingdom",
+                        "city": "Edinburgh",
+                        "college": "Default College",
+                        "course": "Default Course",
+                        "intake_year": "2024",
+                        "intake_month": "feb"
+                    }
+                ],
+                "english_proficiency": "other",
+                "ielts_score": null,
+                "ielts_overall": null,
+                "ielts_listening": null,
+                "ielts_reading": null,
+                "ielts_writing": null,
+                "ielts_speaking": null,
+                "toefl_score": null,
+                "toefl_overall": null,
+                "toefl_listening": null,
+                "toefl_reading": null,
+                "toefl_writing": null,
+                "toefl_speaking": null,
+                "pte_score": null,
+                "pte_overall": null,
+                "pte_listening": null,
+                "pte_reading": null,
+                "pte_writing": null,
+                "pte_speaking": null,
+                "duolingo_overall": "43",
+                "duolingo_listening": "66",
+                "duolingo_reading": "97",
+                "duolingo_writing": "16",
+                "duolingo_speaking": "90",
+                "other_english_test": null,
+                "bachelor_degree": null,
+                "bachelor_university": null,
+                "bachelor_percentage": null,
+                "bachelor_year": null,
+                "master_degree": null,
+                "master_university": null,
+                "master_percentage": null,
+                "master_year": null,
+                "twelfth_board": null,
+                "twelfth_school": null,
+                "twelfth_percentage": null,
+                "twelfth_year": null,
+                "tenth_board": null,
+                "tenth_school": null,
+                "tenth_percentage": null,
+                "tenth_year": null,
+                "visa_refusal_history": true,
+                "refusal_details": "Veritatis modi dolor",
+                "travel_history": true,
+                "financial_support": null,
+                "sponsor_name": null,
+                "sponsor_relationship": null,
+                "estimated_budget": null,
+                "remarks": "Ex sequi doloribus n",
+                "status": "pending",
+                "visa_counselor": null,
+                "employment_history": [
+                    {
+                        "start_date": "2025-03-26",
+                        "end_date": "1989-07-01",
+                        "company_name": "Wynn Parrish Associates",
+                        "position": "Irure quis ratione e",
+                        "location": "Est qui dolore nesci",
+                        "description": ""
+                    }
+                ],
+                "documents": [],
+                "documents_summary": {
+                    "total_count": 0,
+                    "mandatory_count": 0,
+                    "optional_count": 0,
+                    "document_types": [],
+                    "document_names": []
+                },
+                "created_at": "2025-07-24T12:38:47.000000Z",
+                "updated_at": "2025-07-24T12:38:47.000000Z"
             }
         }
     ]

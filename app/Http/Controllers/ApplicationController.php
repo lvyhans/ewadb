@@ -1820,4 +1820,230 @@ class ApplicationController extends Controller
             return null;
         }
     }
+
+    /**
+     * View API logs for debugging external API calls
+     */
+    public function viewApiLogs(Request $request)
+    {
+        try {
+            $logs = [];
+            $logFiles = [
+                'Application API Requests' => storage_path('logs/api_requests.json'),
+                'Lead API Requests' => storage_path('logs/lead_api_requests.json'),
+                'Application Payloads' => base_path('api_payload_logs.json'),
+                'Lead Payloads' => base_path('api_lead_payload_logs.json'),
+            ];
+
+            foreach ($logFiles as $title => $filePath) {
+                if (file_exists($filePath)) {
+                    $content = file_get_contents($filePath);
+                    $data = json_decode($content, true);
+                    
+                    if ($data && isset($data['requests'])) {
+                        // For detailed request/response logs
+                        $logs[$title] = [
+                            'type' => 'requests',
+                            'data' => $data,
+                            'file_path' => $filePath,
+                            'file_size' => filesize($filePath),
+                            'last_modified' => date('Y-m-d H:i:s', filemtime($filePath))
+                        ];
+                    } elseif ($data && isset($data['payloads'])) {
+                        // For payload logs
+                        $logs[$title] = [
+                            'type' => 'payloads',
+                            'data' => $data,
+                            'file_path' => $filePath,
+                            'file_size' => filesize($filePath),
+                            'last_modified' => date('Y-m-d H:i:s', filemtime($filePath))
+                        ];
+                    }
+                } else {
+                    $logs[$title] = [
+                        'type' => 'missing',
+                        'message' => 'Log file not found',
+                        'file_path' => $filePath
+                    ];
+                }
+            }
+
+            // Filter by type if requested
+            if ($request->has('type') && $request->type) {
+                $logs = array_filter($logs, function($log) use ($request) {
+                    return $log['type'] === $request->type;
+                });
+            }
+
+            // Limit entries for performance
+            $limit = $request->get('limit', 50);
+            foreach ($logs as &$log) {
+                if (isset($log['data']['requests']) && count($log['data']['requests']) > $limit) {
+                    $log['data']['requests'] = array_slice($log['data']['requests'], -$limit);
+                    $log['truncated'] = true;
+                }
+                if (isset($log['data']['payloads']) && count($log['data']['payloads']) > $limit) {
+                    $log['data']['payloads'] = array_slice($log['data']['payloads'], -$limit);
+                    $log['truncated'] = true;
+                }
+            }
+
+            return view('applications.api-logs', compact('logs'));
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error loading API logs: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Download API logs as JSON
+     */
+    public function downloadApiLogs(Request $request)
+    {
+        try {
+            $type = $request->get('type', 'all');
+            $timestamp = now()->format('Y-m-d_H-i-s');
+            
+            if ($type === 'all') {
+                // Create a comprehensive export
+                $exportData = [
+                    'export_info' => [
+                        'exported_at' => now()->toISOString(),
+                        'exported_by' => auth()->user()->name ?? 'Unknown',
+                        'export_type' => 'all_api_logs'
+                    ],
+                    'logs' => []
+                ];
+
+                $logFiles = [
+                    'api_requests' => storage_path('logs/api_requests.json'),
+                    'lead_api_requests' => storage_path('logs/lead_api_requests.json'),
+                    'api_payloads' => base_path('api_payload_logs.json'),
+                    'lead_payloads' => base_path('api_lead_payload_logs.json'),
+                ];
+
+                foreach ($logFiles as $key => $filePath) {
+                    if (file_exists($filePath)) {
+                        $content = file_get_contents($filePath);
+                        $data = json_decode($content, true);
+                        $exportData['logs'][$key] = $data;
+                    }
+                }
+
+                $filename = "api_logs_complete_{$timestamp}.json";
+                
+            } else {
+                // Export specific log file
+                $filePaths = [
+                    'requests' => storage_path('logs/api_requests.json'),
+                    'lead_requests' => storage_path('logs/lead_api_requests.json'),
+                    'payloads' => base_path('api_payload_logs.json'),
+                    'lead_payloads' => base_path('api_lead_payload_logs.json'),
+                ];
+
+                if (!isset($filePaths[$type]) || !file_exists($filePaths[$type])) {
+                    return back()->with('error', 'Requested log file not found');
+                }
+
+                $content = file_get_contents($filePaths[$type]);
+                $exportData = json_decode($content, true);
+                $filename = "api_logs_{$type}_{$timestamp}.json";
+            }
+
+            return response()->json($exportData, 200, [
+                'Content-Type' => 'application/json',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            ], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error downloading API logs: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Clear API logs
+     */
+    public function clearApiLogs(Request $request)
+    {
+        try {
+            $type = $request->get('type', 'all');
+            $clearedFiles = [];
+
+            $logFiles = [
+                'api_requests' => storage_path('logs/api_requests.json'),
+                'lead_api_requests' => storage_path('logs/lead_api_requests.json'),
+                'api_payloads' => base_path('api_payload_logs.json'),
+                'lead_payloads' => base_path('api_lead_payload_logs.json'),
+            ];
+
+            if ($type === 'all') {
+                // Clear all log files
+                foreach ($logFiles as $key => $filePath) {
+                    if (file_exists($filePath)) {
+                        // Create backup timestamp
+                        $backupPath = $filePath . '.backup.' . now()->format('Y-m-d_H-i-s');
+                        copy($filePath, $backupPath);
+                        
+                        // Clear the file with basic structure
+                        if (strpos($key, 'requests') !== false) {
+                            $emptyStructure = [
+                                'note' => 'API request logs cleared at ' . now()->toISOString(),
+                                'created_at' => now()->toISOString(),
+                                'last_updated' => now()->toISOString(),
+                                'total_count' => 0,
+                                'successful_requests' => 0,
+                                'failed_requests' => 0,
+                                'requests' => []
+                            ];
+                        } else {
+                            $emptyStructure = [
+                                'note' => 'API payload logs cleared at ' . now()->toISOString(),
+                                'last_updated' => now()->toISOString(),
+                                'total_count' => 0,
+                                'payloads' => []
+                            ];
+                        }
+                        
+                        file_put_contents($filePath, json_encode($emptyStructure, JSON_PRETTY_PRINT));
+                        $clearedFiles[] = basename($filePath);
+                    }
+                }
+            } else {
+                // Clear specific log file
+                if (isset($logFiles[$type]) && file_exists($logFiles[$type])) {
+                    $filePath = $logFiles[$type];
+                    $backupPath = $filePath . '.backup.' . now()->format('Y-m-d_H-i-s');
+                    copy($filePath, $backupPath);
+                    
+                    if (strpos($type, 'requests') !== false) {
+                        $emptyStructure = [
+                            'note' => 'API request logs cleared at ' . now()->toISOString(),
+                            'created_at' => now()->toISOString(),
+                            'last_updated' => now()->toISOString(),
+                            'total_count' => 0,
+                            'successful_requests' => 0,
+                            'failed_requests' => 0,
+                            'requests' => []
+                        ];
+                    } else {
+                        $emptyStructure = [
+                            'note' => 'API payload logs cleared at ' . now()->toISOString(),
+                            'last_updated' => now()->toISOString(),
+                            'total_count' => 0,
+                            'payloads' => []
+                        ];
+                    }
+                    
+                    file_put_contents($filePath, json_encode($emptyStructure, JSON_PRETTY_PRINT));
+                    $clearedFiles[] = basename($filePath);
+                }
+            }
+
+            $message = 'API logs cleared successfully. Files cleared: ' . implode(', ', $clearedFiles);
+            return back()->with('success', $message);
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error clearing API logs: ' . $e->getMessage());
+        }
+    }
 }

@@ -313,8 +313,8 @@ class ExternalApiService
                 'id' => $lead->creator->id,
                 'name' => $lead->creator->name,
                 'email' => $lead->creator->email,
-                'company' => $lead->creator->company ?? null,
-                'role' => $lead->creator->role ?? null,
+                'company' => $lead->creator->company_name ?? null,
+                'role' => $lead->creator->role ?? 'admin',
                 'department' => $lead->creator->department ?? null,
             ],
             
@@ -330,7 +330,7 @@ class ExternalApiService
     private function prepareApplicationData($application, $additionalData = []): array
     {
         // Load only necessary relationships
-        $application->load(['employmentHistory', 'documents', 'courseOptions']);
+        $application->load(['employmentHistory', 'documents', 'courseOptions', 'creator']);
         
         // Log course options count for debugging
         \Log::info('Preparing application data for API', [
@@ -354,6 +354,16 @@ class ExternalApiService
             'passport_no' => $additionalData['passport_no'] ?? '',
             'marital_status' => $additionalData['marital_status'] ?? '',
             'course_level' => $application->course_level,
+            
+            // User information (who created the application)
+            'created_by_user' => [
+                'id' => $application->creator->id,
+                'name' => $application->creator->name,
+                'email' => $application->creator->email,
+                'company' => $application->creator->company_name ?? null,
+                'role' => $application->creator->role ?? 'admin',
+                'department' => $application->creator->department ?? null,
+            ],
             
             // Course options from course finder
             'admissions' => $application->courseOptions->map(function ($courseOption) {
