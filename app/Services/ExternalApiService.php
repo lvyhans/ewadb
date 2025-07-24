@@ -313,8 +313,8 @@ class ExternalApiService
                 'id' => $lead->creator->id,
                 'name' => $lead->creator->name,
                 'email' => $lead->creator->email,
-                'company' => $lead->creator->company_name ?? null,
-                'role' => $lead->creator->role ?? 'admin',
+                'company' => $lead->creator->company ?? null,
+                'role' => $lead->creator->role ?? null,
                 'department' => $lead->creator->department ?? null,
             ],
             
@@ -330,7 +330,7 @@ class ExternalApiService
     private function prepareApplicationData($application, $additionalData = []): array
     {
         // Load only necessary relationships
-        $application->load(['employmentHistory', 'documents', 'courseOptions', 'creator']);
+        $application->load(['employmentHistory', 'documents', 'courseOptions','creator']);
         
         // Log course options count for debugging
         \Log::info('Preparing application data for API', [
@@ -354,16 +354,6 @@ class ExternalApiService
             'passport_no' => $additionalData['passport_no'] ?? '',
             'marital_status' => $additionalData['marital_status'] ?? '',
             'course_level' => $application->course_level,
-            
-            // User information (who created the application)
-            'created_by_user' => [
-                'id' => $application->creator->id,
-                'name' => $application->creator->name,
-                'email' => $application->creator->email,
-                'company' => $application->creator->company_name ?? null,
-                'role' => $application->creator->role ?? 'admin',
-                'department' => $application->creator->department ?? null,
-            ],
             
             // Course options from course finder
             'admissions' => $application->courseOptions->map(function ($courseOption) {
@@ -485,6 +475,16 @@ class ExternalApiService
                 'optional_count' => $application->documents->where('is_mandatory', false)->count(),
                 'document_types' => $application->documents->pluck('document_type')->unique()->values()->toArray(),
                 'document_names' => $application->documents->pluck('document_name')->toArray(),
+            ],
+            
+            // User information (who created the lead)
+            'created_by_user' => [
+                'id' => $application->creator->id,
+                'name' => $application->creator->name,
+                'email' => $application->creator->email,
+                'company' => $application->creator->company ?? null,
+                'role' => $application->creator->role ?? null,
+                'department' => $application->creator->department ?? null,
             ],
             
             // Metadata
