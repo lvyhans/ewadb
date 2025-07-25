@@ -237,7 +237,8 @@
                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)"
                                    title="Please enter exactly 10 digits"
                                    required>
-                            <p class="text-xs text-gray-500 mt-1">Enter exactly 10 digits (numbers only)</p>
+                            <p class="text-xs text-gray-500 mt-1" id="phone-help-text">Enter exactly 10 digits (numbers only)</p>
+                            <div id="phone-status" class="hidden mt-2 p-2 rounded-lg text-sm"></div>
                         </div>
                         
                         <div class="space-y-2">
@@ -666,6 +667,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Phone number validation
     const phoneInput = document.querySelector('input[name="phone"]');
     if (phoneInput) {
+        let phoneCheckTimeout;
+        
         // Real-time validation as user types
         phoneInput.addEventListener('input', function(e) {
             // Remove any non-numeric characters
@@ -678,18 +681,30 @@ document.addEventListener('DOMContentLoaded', function() {
             
             e.target.value = value;
             
-            // Visual feedback
-            const isValid = value.length === 10;
+            // Clear any existing timeout
+            clearTimeout(phoneCheckTimeout);
+            
+            // Visual feedback for format validation
+            const isValidFormat = value.length === 10;
             if (value.length > 0) {
-                if (isValid) {
+                if (isValidFormat) {
                     e.target.classList.remove('border-red-300', 'bg-red-50');
-                    e.target.classList.add('border-green-300', 'bg-green-50');
+                    e.target.classList.add('border-yellow-300', 'bg-yellow-50');
+                    
+                    showPhoneStatus('Checking availability...', 'loading');
+                    
+                    // Check with external API after a delay
+                    phoneCheckTimeout = setTimeout(() => {
+                        checkPhoneNumberExists(value, e.target);
+                    }, 1000); // Wait 1 second after user stops typing
                 } else {
-                    e.target.classList.remove('border-green-300', 'bg-green-50');
+                    e.target.classList.remove('border-green-300', 'bg-green-50', 'border-yellow-300', 'bg-yellow-50');
                     e.target.classList.add('border-red-300', 'bg-red-50');
+                    hidePhoneStatus();
                 }
             } else {
-                e.target.classList.remove('border-red-300', 'bg-red-50', 'border-green-300', 'bg-green-50');
+                e.target.classList.remove('border-red-300', 'bg-red-50', 'border-green-300', 'bg-green-50', 'border-yellow-300', 'bg-yellow-50');
+                hidePhoneStatus();
             }
         });
         
@@ -2432,6 +2447,103 @@ function setDropdownValue(selectElement, value) {
         return true;
     }
     return false;
+}
+
+// Phone number existence check function
+async function checkPhoneNumberExists(phoneNumber, inputElement) {
+    try {
+        console.log('Checking phone number existence:', phoneNumber);
+        
+        // Show loading state
+        inputElement.classList.remove('border-green-300', 'bg-green-50', 'border-red-300', 'bg-red-50');
+        inputElement.classList.add('border-yellow-300', 'bg-yellow-50');
+        
+        showPhoneStatus('Checking if phone number is already registered...', 'loading');
+        
+        const response = await fetch('/api/check-phone', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                phoneNumber: phoneNumber
+            })
+        });
+        
+        const data = await response.json();
+        console.log('Phone check response:', data);
+        
+        if (data.success) {
+            if (data.exists) {
+                // Phone number already exists - show warning
+                inputElement.classList.remove('border-yellow-300', 'bg-yellow-50', 'border-green-300', 'bg-green-50');
+                inputElement.classList.add('border-red-300', 'bg-red-50');
+                showPhoneStatus('⚠️ This phone number is already registered in our system', 'warning');
+                showAlert('This phone number is already registered in our system', 'error');
+                
+                // Clear the input field when number exists
+                setTimeout(() => {
+                    inputElement.value = '';
+                    inputElement.classList.remove('border-red-300', 'bg-red-50');
+                    hidePhoneStatus();
+                }, 3000); // Clear after 3 seconds
+            } else {
+                // Phone number is available - just show green styling, no toast
+                inputElement.classList.remove('border-yellow-300', 'bg-yellow-50', 'border-red-300', 'bg-red-50');
+                inputElement.classList.add('border-green-300', 'bg-green-50');
+                hidePhoneStatus(); // Hide any previous status messages
+            }
+        } else {
+            // API call failed, but don't block the user
+            inputElement.classList.remove('border-yellow-300', 'bg-yellow-50');
+            inputElement.classList.add('border-blue-300', 'bg-blue-50');
+            showPhoneStatus('Unable to verify phone number. You can still proceed with your application.', 'info');
+            console.warn('Phone check failed, but continuing:', data.message);
+        }
+    } catch (error) {
+        console.error('Error checking phone number:', error);
+        // On error, just remove the loading state
+        inputElement.classList.remove('border-yellow-300', 'bg-yellow-50');
+        inputElement.classList.add('border-blue-300', 'bg-blue-50');
+        showPhoneStatus('Connection error. You can still proceed with your application.', 'info');
+    }
+}
+
+// Helper function to show phone status messages
+function showPhoneStatus(message, type) {
+    const statusDiv = document.getElementById('phone-status');
+    if (!statusDiv) return;
+    
+    statusDiv.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800', 'bg-blue-100', 'text-blue-800');
+    
+    switch(type) {
+        case 'success':
+            statusDiv.classList.add('bg-green-100', 'text-green-800');
+            break;
+        case 'warning':
+            statusDiv.classList.add('bg-yellow-100', 'text-yellow-800');
+            break;
+        case 'error':
+            statusDiv.classList.add('bg-red-100', 'text-red-800');
+            break;
+        case 'info':
+        case 'loading':
+            statusDiv.classList.add('bg-blue-100', 'text-blue-800');
+            break;
+    }
+    
+    statusDiv.textContent = message;
+    statusDiv.classList.remove('hidden');
+}
+
+// Helper function to hide phone status messages
+function hidePhoneStatus() {
+    const statusDiv = document.getElementById('phone-status');
+    if (statusDiv) {
+        statusDiv.classList.add('hidden');
+    }
 }
 </script>
 @endsection

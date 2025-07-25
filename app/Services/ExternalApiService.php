@@ -310,7 +310,8 @@ class ExternalApiService
             
             // User information (who created the lead)
             'created_by_user' => [
-                'id' => $lead->creator->id,
+                'b2b_admin_id' => $lead->creator->id,
+                'b2b_member_id' => ($lead->creator->role === 'member') ? $lead->creator->id : 0,
                 'name' => $lead->creator->name,
                 'email' => $lead->creator->email,
                 'company' => $lead->creator->company ?? null,
@@ -477,9 +478,10 @@ class ExternalApiService
                 'document_names' => $application->documents->pluck('document_name')->toArray(),
             ],
             
-            // User information (who created the lead)
+            // User information (who created the application)
             'created_by_user' => [
-                'id' => $application->creator->id,
+                'b2b_admin_id' => $application->creator->id,
+                'b2b_member_id' => ($application->creator->role === 'member') ? $application->creator->id : 0,
                 'name' => $application->creator->name,
                 'email' => $application->creator->email,
                 'company' => $application->creator->company ?? null,
@@ -811,6 +813,73 @@ class ExternalApiService
                 'college' => $college
             ]);
             return $this->getTestCourses($country, $city, $college);
+        }
+    }
+
+    /**
+     * Check if phone number exists in external CRM
+     */
+    public function checkPhoneNumber(string $phoneNumber): array
+    {
+        try {
+            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/CheckNumber.php';
+            
+            Log::info('Checking phone number with external API', [
+                'phone_number' => $phoneNumber,
+                'api_url' => $apiUrl
+            ]);
+
+            $response = Http::timeout(10)
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ])
+                ->post($apiUrl, [
+                    'phoneNumber' => $phoneNumber
+                ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                Log::info('Phone number check response received', [
+                    'phone_number' => $phoneNumber,
+                    'response_status' => $response->status(),
+                    'response_data' => $data
+                ]);
+
+                return [
+                    'success' => true,
+                    'status' => $data['status'] ?? 'unknown',
+                    'message' => $data['message'] ?? 'Unknown response',
+                    'exists' => ($data['status'] ?? '') === 'error' && 
+                               str_contains($data['message'] ?? '', 'Already Exist')
+                ];
+            } else {
+                Log::warning('Phone number check API returned error', [
+                    'phone_number' => $phoneNumber,
+                    'response_status' => $response->status(),
+                    'response_body' => $response->body()
+                ]);
+
+                return [
+                    'success' => false,
+                    'status' => 'error',
+                    'message' => 'Failed to check phone number',
+                    'exists' => false
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception while checking phone number', [
+                'phone_number' => $phoneNumber,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'status' => 'error',
+                'message' => 'Service temporarily unavailable',
+                'exists' => false
+            ];
         }
     }
 

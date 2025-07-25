@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PhoneCheckController;
 use App\Http\Controllers\Api\UserApprovalController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadFollowupController;
@@ -201,3 +202,6 @@ Route::prefix('webhooks')->group(function () {
     // Tarundemo task status webhook
     Route::post('/tasks', [\App\Http\Controllers\Api\TaskWebhookController::class, 'handleTaskWebhook']);
 });
+
+// Public Phone Number Check API (no authentication required for form validation)
+Route::post('/check-phone', [\App\Http\Controllers\Api\PhoneCheckController::class, 'checkPhoneNumber']);
