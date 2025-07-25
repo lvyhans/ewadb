@@ -167,6 +167,40 @@ class Lead extends Model
     }
 
     /**
+     * Scope for filtering leads accessible by a specific user based on their role
+     */
+    public function scopeAccessibleByUser($query, $user)
+    {
+        if ($user->hasRole('admin')) {
+            // Admin can see their own leads and their members' leads
+            return $query->where(function($q) use ($user) {
+                $q->where('created_by', $user->id)        // Their own leads
+                  ->orWhere('assigned_to', $user->id)     // Leads assigned to them
+                  ->orWhereHas('creator', function($subQ) use ($user) {
+                      $subQ->where('admin_id', $user->id); // Leads created by their members
+                  })
+                  ->orWhereHas('assignedUser', function($subQ) use ($user) {
+                      $subQ->where('admin_id', $user->id); // Leads assigned to their members
+                  });
+            });
+        } else {
+            // Member can only see their own leads (created by them or assigned to them)
+            return $query->where(function($q) use ($user) {
+                $q->where('created_by', $user->id)
+                  ->orWhere('assigned_to', $user->id);
+            });
+        }
+    }
+
+    /**
+     * Scope for filtering leads by user role access
+     */
+    public function scopeForUserRole($query, $user)
+    {
+        return $this->scopeAccessibleByUser($query, $user);
+    }
+
+    /**
      * Generate unique reference number
      */
     public static function generateRefNo()

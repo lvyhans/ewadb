@@ -18,7 +18,11 @@ class LeadController extends Controller
      */
     public function index(Request $request)
     {
+        $user = Auth::user();
+        
+        // Apply role-based access control
         $query = Lead::with(['creator', 'assignedUser', 'latestFollowup'])
+                    ->accessibleByUser($user)
                     ->orderBy('created_at', 'desc');
 
         // Special filters for follow-ups
@@ -235,6 +239,9 @@ class LeadController extends Controller
      */
     public function show($id)
     {
+        $user = Auth::user();
+        
+        // Find the lead with access control
         $lead = Lead::with([
             'employmentHistory', 
             'followups.user', 
@@ -243,7 +250,7 @@ class LeadController extends Controller
             'reverts' => function($query) {
                 $query->with('resolver:id,name')->orderBy('created_at', 'desc');
             }
-        ])->findOrFail($id);
+        ])->accessibleByUser($user)->findOrFail($id);
 
         // Add revert statistics
         $revertStats = [
@@ -267,7 +274,8 @@ class LeadController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $lead = Lead::findOrFail($id);
+        $user = Auth::user();
+        $lead = Lead::accessibleByUser($user)->findOrFail($id);
 
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
@@ -299,7 +307,8 @@ class LeadController extends Controller
      */
     public function destroy($id)
     {
-        $lead = Lead::findOrFail($id);
+        $user = Auth::user();
+        $lead = Lead::accessibleByUser($user)->findOrFail($id);
         $lead->delete();
 
         return response()->json([
@@ -313,17 +322,25 @@ class LeadController extends Controller
      */
     public function statistics()
     {
+        $user = Auth::user();
+        
+        // Base query with role-based access control
+        $baseQuery = Lead::accessibleByUser($user);
+        
         $stats = [
-            'total_leads' => Lead::count(),
-            'new_leads' => Lead::where('status', 'new')->count(),
-            'contacted_leads' => Lead::where('status', 'contacted')->count(),
-            'qualified_leads' => Lead::where('status', 'qualified')->count(),
-            'converted_leads' => Lead::where('status', 'converted')->count(),
-            'rejected_leads' => Lead::where('status', 'rejected')->count(),
-            'leads_this_month' => Lead::whereMonth('created_at', now()->month)
-                                     ->whereYear('created_at', now()->year)
-                                     ->count(),
-            'pending_followups' => LeadFollowup::where('status', 'scheduled')
+            'total_leads' => $baseQuery->count(),
+            'new_leads' => $baseQuery->where('status', 'new')->count(),
+            'contacted_leads' => $baseQuery->where('status', 'contacted')->count(),
+            'qualified_leads' => $baseQuery->where('status', 'qualified')->count(),
+            'converted_leads' => $baseQuery->where('status', 'converted')->count(),
+            'rejected_leads' => $baseQuery->where('status', 'rejected')->count(),
+            'leads_this_month' => $baseQuery->whereMonth('created_at', now()->month)
+                                           ->whereYear('created_at', now()->year)
+                                           ->count(),
+            'pending_followups' => LeadFollowup::whereHas('lead', function($query) use ($user) {
+                                                    $query->accessibleByUser($user);
+                                                })
+                                              ->where('status', 'scheduled')
                                               ->where('scheduled_at', '<=', now())
                                               ->count(),
         ];
@@ -339,7 +356,11 @@ class LeadController extends Controller
      */
     public function webIndex(Request $request)
     {
+        $user = Auth::user();
+        
+        // Apply role-based access control
         $query = Lead::with(['creator', 'assignedUser', 'latestFollowup'])
+                    ->accessibleByUser($user)
                     ->orderBy('created_at', 'desc');
 
         // Special filters for follow-ups
@@ -380,14 +401,15 @@ class LeadController extends Controller
 
         $leads = $query->paginate(15);
         
-        // Calculate statistics for all leads (not just the current page)
+        // Calculate statistics for accessible leads only (not just the current page)
+        $baseQuery = Lead::accessibleByUser($user);
         $statistics = [
-            'total' => Lead::count(),
-            'new' => Lead::where('status', 'new')->count(),
-            'contacted' => Lead::where('status', 'contacted')->count(),
-            'qualified' => Lead::where('status', 'qualified')->count(),
-            'converted' => Lead::where('status', 'converted')->count(),
-            'rejected' => Lead::where('status', 'rejected')->count(),
+            'total' => $baseQuery->count(),
+            'new' => $baseQuery->where('status', 'new')->count(),
+            'contacted' => $baseQuery->where('status', 'contacted')->count(),
+            'qualified' => $baseQuery->where('status', 'qualified')->count(),
+            'converted' => $baseQuery->where('status', 'converted')->count(),
+            'rejected' => $baseQuery->where('status', 'rejected')->count(),
         ];
         
         // Add filter information for display

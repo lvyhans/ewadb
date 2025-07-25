@@ -15,7 +15,8 @@ class LeadFollowupController extends Controller
      */
     public function index($leadId)
     {
-        $lead = Lead::findOrFail($leadId);
+        $user = Auth::user();
+        $lead = Lead::accessibleByUser($user)->findOrFail($leadId);
         $followups = $lead->followups()
                          ->with('user')
                          ->orderBy('scheduled_at', 'desc')
@@ -32,7 +33,8 @@ class LeadFollowupController extends Controller
      */
     public function store(Request $request, $leadId)
     {
-        $lead = Lead::findOrFail($leadId);
+        $user = Auth::user();
+        $lead = Lead::accessibleByUser($user)->findOrFail($leadId);
 
         $validator = Validator::make($request->all(), [
             'type' => 'required|in:call,email,meeting,whatsapp,other',
@@ -73,6 +75,10 @@ class LeadFollowupController extends Controller
      */
     public function complete(Request $request, $leadId, $followupId)
     {
+        $user = Auth::user();
+        // First check if user has access to the lead
+        $lead = Lead::accessibleByUser($user)->findOrFail($leadId);
+        
         $followup = LeadFollowup::where('lead_id', $leadId)
                                ->where('id', $followupId)
                                ->firstOrFail();
@@ -122,6 +128,10 @@ class LeadFollowupController extends Controller
      */
     public function cancel($leadId, $followupId)
     {
+        $user = Auth::user();
+        // First check if user has access to the lead
+        $lead = Lead::accessibleByUser($user)->findOrFail($leadId);
+        
         $followup = LeadFollowup::where('lead_id', $leadId)
                                ->where('id', $followupId)
                                ->where('status', 'scheduled')
@@ -140,7 +150,11 @@ class LeadFollowupController extends Controller
      */
     public function todaysFollowups()
     {
+        $user = Auth::user();
         $followups = LeadFollowup::with(['lead', 'user'])
+                                ->whereHas('lead', function($query) use ($user) {
+                                    $query->accessibleByUser($user);
+                                })
                                 ->today()
                                 ->pending()
                                 ->orderBy('scheduled_at', 'asc')
@@ -157,7 +171,11 @@ class LeadFollowupController extends Controller
      */
     public function overdueFollowups()
     {
+        $user = Auth::user();
         $followups = LeadFollowup::with(['lead', 'user'])
+                                ->whereHas('lead', function($query) use ($user) {
+                                    $query->accessibleByUser($user);
+                                })
                                 ->overdue()
                                 ->orderBy('scheduled_at', 'asc')
                                 ->get();
@@ -173,7 +191,11 @@ class LeadFollowupController extends Controller
      */
     public function myFollowups(Request $request)
     {
+        $user = Auth::user();
         $query = LeadFollowup::with(['lead', 'user'])
+                            ->whereHas('lead', function($query) use ($user) {
+                                $query->accessibleByUser($user);
+                            })
                             ->where('user_id', Auth::id());
 
         if ($request->has('status')) {

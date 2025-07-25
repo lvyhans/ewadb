@@ -16,7 +16,8 @@ class LeadRevertController extends Controller
     public function index(Request $request, $leadId)
     {
         try {
-            $lead = Lead::findOrFail($leadId);
+            $user = Auth::user();
+            $lead = Lead::accessibleByUser($user)->findOrFail($leadId);
             
             $reverts = LeadRevert::where('lead_id', $leadId)
                 ->with(['resolver:id,name'])
@@ -50,7 +51,11 @@ class LeadRevertController extends Controller
     public function getAllActiveReverts(Request $request)
     {
         try {
+            $user = Auth::user();
             $query = LeadRevert::with(['lead:id,ref_no,name,status', 'resolver:id,name'])
+                ->whereHas('lead', function($leadQuery) use ($user) {
+                    $leadQuery->accessibleByUser($user);
+                })
                 ->where('status', 'active');
 
             // Apply filters
@@ -97,6 +102,7 @@ class LeadRevertController extends Controller
     public function resolve(Request $request, $revertId)
     {
         try {
+            $user = Auth::user();
             $validator = Validator::make($request->all(), [
                 'resolution_notes' => 'nullable|string|max:1000'
             ]);
@@ -109,7 +115,10 @@ class LeadRevertController extends Controller
                 ], 422);
             }
 
-            $revert = LeadRevert::findOrFail($revertId);
+            // Check if revert belongs to an accessible lead
+            $revert = LeadRevert::whereHas('lead', function($leadQuery) use ($user) {
+                $leadQuery->accessibleByUser($user);
+            })->findOrFail($revertId);
 
             if ($revert->status === 'resolved') {
                 return response()->json([
@@ -146,7 +155,11 @@ class LeadRevertController extends Controller
     public function reopen($revertId)
     {
         try {
-            $revert = LeadRevert::findOrFail($revertId);
+            $user = Auth::user();
+            // Check if revert belongs to an accessible lead
+            $revert = LeadRevert::whereHas('lead', function($leadQuery) use ($user) {
+                $leadQuery->accessibleByUser($user);
+            })->findOrFail($revertId);
 
             if ($revert->status !== 'resolved') {
                 return response()->json([
@@ -185,7 +198,11 @@ class LeadRevertController extends Controller
     public function archive($revertId)
     {
         try {
-            $revert = LeadRevert::findOrFail($revertId);
+            $user = Auth::user();
+            // Check if revert belongs to an accessible lead
+            $revert = LeadRevert::whereHas('lead', function($leadQuery) use ($user) {
+                $leadQuery->accessibleByUser($user);
+            })->findOrFail($revertId);
 
             $revert->update(['status' => 'archived']);
 
@@ -212,27 +229,34 @@ class LeadRevertController extends Controller
     public function getStatistics()
     {
         try {
+            $user = Auth::user();
+            
+            // Base query for accessible reverts
+            $baseRevertQuery = LeadRevert::whereHas('lead', function($leadQuery) use ($user) {
+                $leadQuery->accessibleByUser($user);
+            });
+            
             $stats = [
-                'total_reverts' => LeadRevert::count(),
-                'active_reverts' => LeadRevert::where('status', 'active')->count(),
-                'resolved_reverts' => LeadRevert::where('status', 'resolved')->count(),
-                'archived_reverts' => LeadRevert::where('status', 'archived')->count(),
-                'high_priority_active' => LeadRevert::where('status', 'active')->where('priority', 'high')->count(),
-                'urgent_priority_active' => LeadRevert::where('status', 'active')->where('priority', 'urgent')->count(),
-                'overdue_reverts' => LeadRevert::where('status', 'active')
+                'total_reverts' => $baseRevertQuery->count(),
+                'active_reverts' => $baseRevertQuery->where('status', 'active')->count(),
+                'resolved_reverts' => $baseRevertQuery->where('status', 'resolved')->count(),
+                'archived_reverts' => $baseRevertQuery->where('status', 'archived')->count(),
+                'high_priority_active' => $baseRevertQuery->where('status', 'active')->where('priority', 'high')->count(),
+                'urgent_priority_active' => $baseRevertQuery->where('status', 'active')->where('priority', 'urgent')->count(),
+                'overdue_reverts' => $baseRevertQuery->where('status', 'active')
                     ->where(function($query) {
                         $query->where('priority', 'high')->where('created_at', '<', now()->subDays(2))
                               ->orWhere('priority', 'normal')->where('created_at', '<', now()->subDays(7));
                     })->count(),
-                'reverts_by_type' => LeadRevert::selectRaw('revert_type, count(*) as count')
+                'reverts_by_type' => $baseRevertQuery->selectRaw('revert_type, count(*) as count')
                     ->groupBy('revert_type')
                     ->pluck('count', 'revert_type'),
-                'reverts_by_team' => LeadRevert::selectRaw('team_name, count(*) as count')
+                'reverts_by_team' => $baseRevertQuery->selectRaw('team_name, count(*) as count')
                     ->groupBy('team_name')
                     ->orderBy('count', 'desc')
                     ->limit(10)
                     ->pluck('count', 'team_name'),
-                'recent_activity' => LeadRevert::with(['lead:id,ref_no,name'])
+                'recent_activity' => $baseRevertQuery->with(['lead:id,ref_no,name'])
                     ->orderBy('created_at', 'desc')
                     ->limit(10)
                     ->get()
