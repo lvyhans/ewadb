@@ -191,6 +191,7 @@ class AdminHierarchyController extends Controller
             }
             
             $adminData = [
+                'admin_id' => $admin->id,
                 'admin_details' => [
                     'id' => $admin->id,
                     'name' => $admin->name,
@@ -202,8 +203,17 @@ class AdminHierarchyController extends Controller
                     'state' => $admin->state,
                     'approval_status' => $admin->approval_status,
                     'created_at' => $admin->created_at,
+                    'updated_at' => $admin->updated_at,
+                    'is_super_admin' => $admin->isSuperAdmin(),
+                    'is_regular_admin' => $admin->isRegularAdmin(),
                     'member_count' => $admin->members->count(),
-                    'roles' => $admin->roles->pluck('display_name')
+                    'roles' => $admin->roles->map(function($role) {
+                        return [
+                            'id' => $role->id,
+                            'name' => $role->name,
+                            'display_name' => $role->display_name
+                        ];
+                    })
                 ],
                 'group_name' => $admin->name . "'s Group",
                 'members' => $admin->members->map(function($member) {
@@ -212,11 +222,43 @@ class AdminHierarchyController extends Controller
                         'name' => $member->name,
                         'email' => $member->email,
                         'company_name' => $member->company_name,
+                        'company_registration_number' => $member->company_registration_number,
+                        'gstin' => $member->gstin,
+                        'pan_number' => $member->pan_number,
+                        'company_address' => $member->company_address,
+                        'company_city' => $member->company_city,
+                        'company_state' => $member->company_state,
+                        'company_pincode' => $member->company_pincode,
+                        'company_phone' => $member->company_phone,
+                        'company_email' => $member->company_email,
+                        'admin_id' => $member->admin_id,
+                        'admin_group_name' => $member->admin_group_name,
                         'approval_status' => $member->approval_status,
+                        'approved_at' => $member->approved_at,
                         'created_at' => $member->created_at,
-                        'roles' => $member->roles->pluck('display_name')
+                        'updated_at' => $member->updated_at,
+                        'roles' => $member->roles->map(function($role) {
+                            return [
+                                'id' => $role->id,
+                                'name' => $role->name,
+                                'display_name' => $role->display_name
+                            ];
+                        }),
+                        'documents' => [
+                            'company_registration_certificate' => $member->company_registration_certificate,
+                            'gst_certificate' => $member->gst_certificate,
+                            'pan_card' => $member->pan_card,
+                            'address_proof' => $member->address_proof,
+                            'bank_statement' => $member->bank_statement
+                        ]
                     ];
-                })
+                })->toArray(),
+                'statistics' => [
+                    'total_members' => $admin->members->count(),
+                    'approved_members' => $admin->members->where('approval_status', 'approved')->count(),
+                    'pending_members' => $admin->members->where('approval_status', 'pending')->count(),
+                    'rejected_members' => $admin->members->where('approval_status', 'rejected')->count()
+                ]
             ];
             
             return response()->json([
