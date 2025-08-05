@@ -74,14 +74,7 @@
                     <label class="block text-sm font-medium text-gray-700">Country</label>
                     <select name="country" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all">
                         <option value="">Select Country</option>
-                        <option value="Canada">Canada</option>
-                        <option value="USA">USA</option>
-                        <option value="Australia">Australia</option>
-                        <option value="U.K">United Kingdom</option>
-                        <option value="New Zealand">New Zealand</option>
-                        <option value="Germany">Germany</option>
-                        <option value="Singapore">Singapore</option>
-                        <option value="France">France</option>
+                        <!-- Options will be populated dynamically from API -->
                     </select>
                 </div>
 
@@ -89,11 +82,7 @@
                     <label class="block text-sm font-medium text-gray-700">Course Type</label>
                     <select name="course_type" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all">
                         <option value="">Select Course Type</option>
-                        <option value="Bachelor">Bachelor</option>
-                        <option value="Masters">Masters</option>
-                        <option value="Post Graduate Diploma">Post Graduate Diploma</option>
-                        <option value="Diploma">Diploma</option>
-                        <option value="Certificate">Certificate</option>
+                        <!-- Options will be populated dynamically from API -->
                     </select>
                 </div>
             </div>
@@ -104,13 +93,7 @@
                     <label class="block text-sm font-medium text-gray-700">Study Area</label>
                     <select name="study_area" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all">
                         <option value="">Select Study Area</option>
-                        <option value="Business & Management">Business & Management</option>
-                        <option value="Computer & IT">Computer & IT</option>
-                        <option value="Engineering">Engineering</option>
-                        <option value="Science">Science</option>
-                        <option value="Health">Health</option>
-                        <option value="Education">Education</option>
-                        <option value="Arts">Arts</option>
+                        <!-- Options will be populated dynamically from API -->
                     </select>
                 </div>
 
@@ -118,12 +101,7 @@
                     <label class="block text-sm font-medium text-gray-700">Discipline Area</label>
                     <select name="discipline_area" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all">
                         <option value="">Select Discipline</option>
-                        <option value="Management">Management</option>
-                        <option value="Computer Science">Computer Science</option>
-                        <option value="Data Science & Analytics">Data Science & Analytics</option>
-                        <option value="Finance">Finance</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="MBA">MBA</option>
+                        <!-- Options will be populated dynamically from API -->
                     </select>
                 </div>
 
@@ -131,10 +109,7 @@
                     <label class="block text-sm font-medium text-gray-700">Duration</label>
                     <select name="duration" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all">
                         <option value="">Select Duration</option>
-                        <option value="1 Year">1 Year</option>
-                        <option value="2 Years">2 Years</option>
-                        <option value="3 Years">3 Years</option>
-                        <option value="4 Years">4 Years</option>
+                        <!-- Options will be populated dynamically from API -->
                     </select>
                 </div>
             </div>
@@ -184,38 +159,28 @@
                                 <label class="block text-sm font-medium text-gray-700">Backlogs</label>
                                 <select name="backlogs" class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all">
                                     <option value="">Any</option>
-                                    <option value="0">No Backlogs</option>
-                                    <option value="3">Up to 3</option>
-                                    <option value="5">Up to 5</option>
-                                    <option value="10">Up to 10</option>
-                                    <option value="No Limit">No Limit</option>
+                                    <!-- Options will be populated dynamically from API -->
                                 </select>
                             </div>
                             <div class="space-y-2">
                                 <label class="block text-sm font-medium text-gray-700">Gap Years</label>
                                 <select name="gap" class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all">
                                     <option value="">Any</option>
-                                    <option value="No Gap">No Gap</option>
-                                    <option value="2 Years">Up to 2 Years</option>
-                                    <option value="5 Years">Up to 5 Years</option>
-                                    <option value="No Limit">No Limit</option>
+                                    <!-- Options will be populated dynamically from API -->
                                 </select>
                             </div>
                             <div class="space-y-2">
                                 <label class="block text-sm font-medium text-gray-700">12+3 Pattern</label>
                                 <select name="twelve_plus_three" class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all">
                                     <option value="">Any</option>
-                                    <option value="Accepted">Accepted</option>
-                                    <option value="Not Accepted">Not Accepted</option>
-                                    <option value="Not Applicable">Not Applicable</option>
+                                    <!-- Options will be populated dynamically from API -->
                                 </select>
                             </div>
                             <div class="space-y-2">
                                 <label class="block text-sm font-medium text-gray-700">Conditional Admission</label>
                                 <select name="conditional_admission" class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all">
                                     <option value="">Any</option>
-                                    <option value="Yes">Yes</option>
-                                    <option value="No">No</option>
+                                    <!-- Options will be populated dynamically from API -->
                                 </select>
                             </div>
                         </div>
@@ -245,18 +210,7 @@
                             <label class="block text-sm font-medium text-gray-700">Preferred Intake</label>
                             <select name="intake" class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all">
                                 <option value="">Any Intake</option>
-                                <option value="january">January</option>
-                                <option value="february">February</option>
-                                <option value="march">March</option>
-                                <option value="april">April</option>
-                                <option value="may">May</option>
-                                <option value="june">June</option>
-                                <option value="july">July</option>
-                                <option value="august">August</option>
-                                <option value="september">September</option>
-                                <option value="october">October</option>
-                                <option value="november">November</option>
-                                <option value="december">December</option>
+                                <!-- Options will be populated dynamically from API -->
                             </select>
                         </div>
                     </div>
@@ -392,6 +346,8 @@ let totalResults = 0;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Course finder page initializing...');
+    
     // Set up form submission
     const form = document.getElementById('courseFinderForm');
     if (form) {
@@ -411,8 +367,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Show loading message for filters
+    showAlert('Loading filter options...', 'info');
+
     // Load available filters
-    loadFilters();
+    loadFilters().then(() => {
+        console.log('Filters loaded successfully');
+    }).catch((error) => {
+        console.error('Failed to load filters:', error);
+        showAlert('Some filter options may not be available', 'error');
+    });
 
     // Initial empty state
     showEmptyState();
@@ -439,18 +403,41 @@ async function loadFilters() {
         
         if (data.status === 'success' && data.filters) {
             populateFilterOptions(data.filters);
+            showAlert('Filter options loaded successfully!', 'success');
+            return Promise.resolve();
+        } else {
+            console.warn('Failed to load filters, using static fallbacks');
+            showAlert('Using default filter options', 'info');
+            return Promise.resolve();
         }
     } catch (error) {
         console.error('Error loading filters:', error);
-        // Continue with static options if filter loading fails
+        showAlert('Filter loading failed, using defaults', 'error');
+        return Promise.reject(error);
     }
 }
 
 // Populate filter dropdowns with dynamic options
 function populateFilterOptions(filters) {
+    // Filter mapping to match API filter names to form field names
+    const filterMapping = {
+        'countries': 'country',
+        'course_type': 'course_type', 
+        'study_area': 'study_area',
+        'discipline_area': 'discipline_area',
+        'duration': 'duration',
+        'backlogs': 'backlogs',
+        'gap': 'gap',
+        'twelve_plus_three': 'twelve_plus_three',
+        'conditional_admission': 'conditional_admission',
+        'intake_months': 'intake'
+    };
+
     filters.forEach(filter => {
-        if (filter.type === 'select' && filter.options) {
-            const selectElement = document.querySelector(`select[name="${filter.name}"]`);
+        if (filter.type === 'select' && filter.options && filterMapping[filter.name]) {
+            const fieldName = filterMapping[filter.name];
+            const selectElement = document.querySelector(`select[name="${fieldName}"]`);
+            
             if (selectElement) {
                 // Keep the first "Select..." option
                 const firstOption = selectElement.firstElementChild;
@@ -459,13 +446,27 @@ function populateFilterOptions(filters) {
                     selectElement.appendChild(firstOption);
                 }
                 
+                // Clean and deduplicate options
+                const cleanOptions = [...new Set(filter.options)]
+                    .filter(option => option && option.trim() !== '' && option.toLowerCase() !== 'test')
+                    .sort();
+                
                 // Add dynamic options
-                filter.options.forEach(option => {
+                cleanOptions.forEach(option => {
                     const optionElement = document.createElement('option');
                     optionElement.value = option;
-                    optionElement.textContent = option;
+                    
+                    // Special formatting for certain values
+                    let displayText = option;
+                  
+                    
+                    optionElement.textContent = displayText;
                     selectElement.appendChild(optionElement);
                 });
+                
+                console.log(`Populated ${fieldName} with ${cleanOptions.length} options`);
+            } else {
+                console.warn(`Select element not found for field: ${fieldName}`);
             }
         }
     });
