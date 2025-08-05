@@ -8,7 +8,12 @@ use Illuminate\Support\Facades\Log;
 
 class CourseFinderController extends Controller
 {
-    private $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/course_finder';
+    private $apiUrl;
+
+    public function __construct()
+    {
+        $this->apiUrl = config('services.external_api.course_finder_url', 'https://tarundemo.innerxcrm.com/b2bapi/course_finder');
+    }
 
     /**
      * Display the course finder page

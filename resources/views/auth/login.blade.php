@@ -196,34 +196,7 @@
                 </div>
             </form>
         </div>
-
-        <!-- Test Credentials Card -->
-        <div class="glass-effect rounded-2xl shadow-lg p-6 mt-6 slide-in">
-            <div class="flex items-center mb-4">
-                <div class="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full mr-3">
-                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-800">Demo Credentials</h3>
-            </div>
-            <div class="space-y-3">
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-200">
-                    <div class="font-semibold text-blue-800 mb-1">Administrator</div>
-                    <div class="text-sm text-gray-600">
-                        <div class="font-mono text-blue-700">admin@example.com</div>
-                        <div class="font-mono text-blue-700">password</div>
-                    </div>
-                </div>
-                <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg border border-green-200">
-                    <div class="font-semibold text-green-800 mb-1">Member</div>
-                    <div class="text-sm text-gray-600">
-                        <div class="font-mono text-green-700">member@example.com</div>
-                        <div class="font-mono text-green-700">password</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+ 
     </div>
 </body>
 </html>

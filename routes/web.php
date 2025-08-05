@@ -276,10 +276,10 @@ Route::get('/debug-journey-integration/{visa_form_id?}', function($visaFormId = 
     
     // Simulate the same calls as showApiApplicationDetails
     try {
-        $basicApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application';
+        $basicApiUrl = config('services.external_api.application_url', 'https://tarundemo.innerxcrm.com/b2bapi/application');
         $basicPayload = ['b2b_admin_id' => 1, 'visa_form_id' => $visaFormId];
         
-        $detailsApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+        $detailsApiUrl = config('services.external_api.application_details_url', 'https://tarundemo.innerxcrm.com/b2bapi/application_details');
         $detailsPayload = ['b2b_admin_id' => 1, 'visa_form_id' => $visaFormId];
         
         // Use reflection to access private methods

@@ -35,8 +35,15 @@ return [
     ],
 
     'external_api' => [
+        'base_url' => env('EXTERNAL_API_BASE_URL', 'https://tarundemo.innerxcrm.com'),
         'enquiry_lead_url' => env('EXTERNAL_API_ENQUIRY_LEAD_URL'),
         'checklist_url' => env('EXTERNAL_API_CHECKLIST_URL'),
+        'college_filter_url' => env('EXTERNAL_API_COLLEGE_FILTER_URL'),
+        'application_url' => env('EXTERNAL_API_APPLICATION_URL'),
+        'application_details_url' => env('EXTERNAL_API_APPLICATION_DETAILS_URL'),
+        'application_journey_url' => env('EXTERNAL_API_APPLICATION_JOURNEY_URL'),
+        'phone_check_url' => env('EXTERNAL_API_PHONE_CHECK_URL'),
+        'course_finder_url' => env('EXTERNAL_API_COURSE_FINDER_URL'),
         'countries_url' => env('EXTERNAL_API_COUNTRIES_URL'),
         'cities_url' => env('EXTERNAL_API_CITIES_URL'),
         'colleges_url' => env('EXTERNAL_API_COLLEGES_URL'),

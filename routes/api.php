@@ -165,6 +165,9 @@ Route::prefix('dropdown')->group(function () {
     Route::get('/cities', [ApplicationController::class, 'getCities']);
     Route::get('/colleges', [ApplicationController::class, 'getColleges']);
     Route::get('/courses', [ApplicationController::class, 'getCourses']);
+    
+    // Unified College Filter API
+    Route::post('/college-filter', [ApplicationController::class, 'getCollegeFilterData']);
 });
 
 // Public application data routes

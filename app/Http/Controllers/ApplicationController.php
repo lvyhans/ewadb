@@ -32,7 +32,7 @@ class ApplicationController extends Controller
             $limit = $entries;
             
             // API endpoint
-            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application';
+            $apiUrl = config('services.external_api.application_url', 'https://tarundemo.innerxcrm.com/b2bapi/application');
             
             // Request payload - dynamically set based on user role
             $payload = $this->buildApiPayload([
@@ -1163,6 +1163,42 @@ class ApplicationController extends Controller
     }
 
     /**
+     * Unified College Filter API endpoint
+     * This endpoint provides direct access to the unified College Filter API
+     */
+    public function getCollegeFilterData(Request $request)
+    {
+        try {
+            $filters = [];
+            
+            // Build filters based on request parameters
+            if ($request->has('country') && !empty($request->country)) {
+                $filters['country'] = $request->country;
+            }
+            
+            if ($request->has('city') && !empty($request->city)) {
+                $filters['city'] = $request->city;
+            }
+            
+            if ($request->has('college') && !empty($request->college)) {
+                $filters['college'] = $request->college;
+            }
+            
+            $externalApiService = new ExternalApiService();
+            $result = $externalApiService->getCollegeFilterData($filters);
+            
+            return response()->json($result);
+        } catch (\Exception $e) {
+            \Log::error('Error calling unified College Filter API: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch data from College Filter API',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Format file size for display
      */
     public static function formatFileSize($bytes)
@@ -1187,7 +1223,7 @@ class ApplicationController extends Controller
     {
         try {
             // API endpoint for application details
-            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+            $apiUrl = config('services.external_api.application_details_url', 'https://tarundemo.innerxcrm.com/b2bapi/application_details');
             
             // Request payload - dynamically set based on user role
             $payload = $this->buildApiPayload([
@@ -1228,7 +1264,7 @@ class ApplicationController extends Controller
     {
         try {
             // Get basic application data by filtering the main application endpoint
-            $basicApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application';
+            $basicApiUrl = config('services.external_api.application_url', 'https://tarundemo.innerxcrm.com/b2bapi/application');
             $basicPayload = $this->buildApiPayload([
                 'visa_form_id' => $visaFormId
             ]);
@@ -1236,7 +1272,7 @@ class ApplicationController extends Controller
             $basicResponse = $this->makeApiCall($basicApiUrl, $basicPayload);
             
             // Get detailed application data (admissions and documents)
-            $detailsApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+            $detailsApiUrl = config('services.external_api.application_details_url', 'https://tarundemo.innerxcrm.com/b2bapi/application_details');
             $detailsPayload = $this->buildApiPayload([
                 'visa_form_id' => $visaFormId
             ]);
@@ -1317,7 +1353,7 @@ class ApplicationController extends Controller
             Log::info('=== DEBUG API ENDPOINTS ===');
             
             // Test 1: Get applications list to see available IDs
-            $listApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application';
+            $listApiUrl = config('services.external_api.application_url', 'https://tarundemo.innerxcrm.com/b2bapi/application');
             $listPayload = $this->buildApiPayload([
                 'limit' => 5,
                 'page' => 1
@@ -1344,7 +1380,7 @@ class ApplicationController extends Controller
             $basicResults = [];
             if (!empty($availableIds)) {
                 $testId = $availableIds[0];
-                $basicApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application/' . $testId;
+                $basicApiUrl = config('services.external_api.application_url', 'https://tarundemo.innerxcrm.com/b2bapi/application') . '/' . $testId;
                 $basicPayload = $this->buildApiPayload([
                     'visa_form_id' => $testId
                 ]);
@@ -1377,7 +1413,7 @@ class ApplicationController extends Controller
             $detailsResults = [];
             if (!empty($availableIds)) {
                 $testId = $availableIds[0];
-                $detailsApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+                $detailsApiUrl = config('services.external_api.application_details_url', 'https://tarundemo.innerxcrm.com/b2bapi/application_details');
                 $detailsPayload = $this->buildApiPayload([
                     'visa_form_id' => $testId
                 ]);
@@ -1443,11 +1479,11 @@ class ApplicationController extends Controller
             $detailsPayload = ['b2b_admin_id' => 1, 'visa_form_id' => $visaFormId];
             
             // Get basic application data by filtering the main application endpoint
-            $basicApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application';
+            $basicApiUrl = config('services.external_api.application_url', 'https://tarundemo.innerxcrm.com/b2bapi/application');
             $basicResponse = $this->makeApiCall($basicApiUrl, $basicPayload);
             
             // Get detailed application data (admissions and documents)
-            $detailsApiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+            $detailsApiUrl = config('services.external_api.application_details_url', 'https://tarundemo.innerxcrm.com/b2bapi/application_details');
             $detailsResponse = $this->makeApiCall($detailsApiUrl, $detailsPayload);
             
             $application = null;
@@ -1499,7 +1535,7 @@ class ApplicationController extends Controller
             }
 
             // API endpoint for application journey
-            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_journey';
+            $apiUrl = config('services.external_api.application_journey_url', 'https://tarundemo.innerxcrm.com/b2bapi/application_journey');
             
             // Request payload - dynamically set based on user role
             $payload = $this->buildApiPayload([
@@ -1761,7 +1797,7 @@ class ApplicationController extends Controller
     private function getAdmissionData($visaFormId, $admissionId)
     {
         try {
-            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_details';
+            $apiUrl = config('services.external_api.application_details_url', 'https://tarundemo.innerxcrm.com/b2bapi/application_details');
             $payload = $this->buildApiPayload([
                 'visa_form_id' => $visaFormId
             ]);
@@ -1795,7 +1831,7 @@ class ApplicationController extends Controller
     private function getJourneyData($admissionId)
     {
         try {
-            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/application_journey';
+            $apiUrl = config('services.external_api.application_journey_url', 'https://tarundemo.innerxcrm.com/b2bapi/application_journey');
             $payload = $this->buildApiPayload([
                 'application_id' => $admissionId // Note: API uses 'application_id' but actually expects admission_id
             ]);

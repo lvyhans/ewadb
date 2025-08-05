@@ -644,35 +644,52 @@ class ExternalApiService
     }
 
     /**
-     * Get countries from external API
+     * Get countries from unified College Filter API
      */
     public function getCountries(): array
     {
         try {
-            $apiUrl = config('services.external_api.countries_url');
+            $apiUrl = config('services.external_api.college_filter_url', 'https://tarundemo.innerxcrm.com/b2bapi/adform');
             
-            if (!$apiUrl) {
-                Log::warning('External API countries URL not configured, returning test data');
-                return $this->getTestCountries();
-            }
+            Log::info('Fetching countries from unified College Filter API', ['url' => $apiUrl]);
 
-            Log::info('Fetching countries from external API', ['url' => $apiUrl]);
-
-            $response = Http::timeout(30)->get($apiUrl);
+            $response = Http::timeout(30)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post($apiUrl, []);
 
             if ($response->successful()) {
                 $data = $response->json();
-                Log::info('Countries fetched successfully', ['count' => count($data)]);
-                return $data;
+                
+                if (isset($data['status']) && $data['status'] === 'success' && 
+                    isset($data['level']) && $data['level'] === 'country' && 
+                    isset($data['data'])) {
+                    
+                    // Transform the array of country names to the expected format
+                    $countries = array_map(function($country) {
+                        return ['country_name' => $country];
+                    }, $data['data']);
+                    
+                    Log::info('Countries fetched successfully from unified API', [
+                        'count' => count($countries),
+                        'countries' => $data['data']
+                    ]);
+                    
+                    return $countries;
+                } else {
+                    Log::warning('Unexpected response format from unified API, returning test data', [
+                        'response' => $data
+                    ]);
+                    return $this->getTestCountries();
+                }
             } else {
-                Log::warning('Failed to fetch countries from external API, returning test data', [
+                Log::warning('Failed to fetch countries from unified API, returning test data', [
                     'status' => $response->status(),
                     'body' => $response->body()
                 ]);
                 return $this->getTestCountries();
             }
         } catch (\Exception $e) {
-            Log::warning('Error fetching countries from external API, returning test data', [
+            Log::warning('Error fetching countries from unified API, returning test data', [
                 'error' => $e->getMessage()
             ]);
             return $this->getTestCountries();
@@ -680,28 +697,52 @@ class ExternalApiService
     }
 
     /**
-     * Get cities by country from external API
+     * Get cities by country from unified College Filter API
      */
     public function getCitiesByCountry(string $country): array
     {
         try {
-            $apiUrl = config('services.external_api.cities_url');
+            $apiUrl = config('services.external_api.college_filter_url', 'https://tarundemo.innerxcrm.com/b2bapi/adform');
             
-            if (!$apiUrl) {
-                Log::warning('External API cities URL not configured, returning test data');
-                return $this->getTestCities($country);
-            }
+            Log::info('Fetching cities from unified College Filter API', [
+                'url' => $apiUrl, 
+                'country' => $country
+            ]);
 
-            Log::info('Fetching cities from external API', ['url' => $apiUrl, 'country' => $country]);
-
-            $response = Http::timeout(30)->get($apiUrl, ['country' => $country]);
+            $response = Http::timeout(30)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post($apiUrl, [
+                    'country' => $country
+                ]);
 
             if ($response->successful()) {
                 $data = $response->json();
-                Log::info('Cities fetched successfully', ['count' => count($data), 'country' => $country]);
-                return $data;
+                
+                if (isset($data['status']) && $data['status'] === 'success' && 
+                    isset($data['level']) && $data['level'] === 'city' && 
+                    isset($data['data']) && isset($data['country']) && $data['country'] === $country) {
+                    
+                    // Transform the array of city names to the expected format
+                    $cities = array_map(function($city) {
+                        return ['city_name' => $city];
+                    }, $data['data']);
+                    
+                    Log::info('Cities fetched successfully from unified API', [
+                        'count' => count($cities),
+                        'country' => $country,
+                        'cities' => $data['data']
+                    ]);
+                    
+                    return $cities;
+                } else {
+                    Log::warning('Unexpected response format from unified API, returning test data', [
+                        'response' => $data,
+                        'country' => $country
+                    ]);
+                    return $this->getTestCities($country);
+                }
             } else {
-                Log::warning('Failed to fetch cities from external API, returning test data', [
+                Log::warning('Failed to fetch cities from unified API, returning test data', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'country' => $country
@@ -709,7 +750,7 @@ class ExternalApiService
                 return $this->getTestCities($country);
             }
         } catch (\Exception $e) {
-            Log::warning('Error fetching cities from external API, returning test data', [
+            Log::warning('Error fetching cities from unified API, returning test data', [
                 'error' => $e->getMessage(),
                 'country' => $country
             ]);
@@ -718,31 +759,57 @@ class ExternalApiService
     }
 
     /**
-     * Get colleges by country and city from external API
+     * Get colleges by country and city from unified College Filter API
      */
     public function getCollegesByCountryAndCity(string $country, string $city): array
     {
         try {
-            $apiUrl = config('services.external_api.colleges_url');
+            $apiUrl = config('services.external_api.college_filter_url', 'https://tarundemo.innerxcrm.com/b2bapi/adform');
             
-            if (!$apiUrl) {
-                Log::warning('External API colleges URL not configured, returning test data');
-                return $this->getTestColleges($country, $city);
-            }
-
-            Log::info('Fetching colleges from external API', ['url' => $apiUrl, 'country' => $country, 'city' => $city]);
-
-            $response = Http::timeout(30)->get($apiUrl, [
-                'country' => $country,
+            Log::info('Fetching colleges from unified College Filter API', [
+                'url' => $apiUrl, 
+                'country' => $country, 
                 'city' => $city
             ]);
 
+            $response = Http::timeout(30)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post($apiUrl, [
+                    'country' => $country,
+                    'city' => $city
+                ]);
+
             if ($response->successful()) {
                 $data = $response->json();
-                Log::info('Colleges fetched successfully', ['count' => count($data), 'country' => $country, 'city' => $city]);
-                return $data;
+                
+                if (isset($data['status']) && $data['status'] === 'success' && 
+                    isset($data['level']) && $data['level'] === 'college' && 
+                    isset($data['data']) && isset($data['country']) && $data['country'] === $country &&
+                    isset($data['city']) && $data['city'] === $city) {
+                    
+                    // Transform the array of college names to the expected format
+                    $colleges = array_map(function($college) {
+                        return ['college_name' => $college];
+                    }, $data['data']);
+                    
+                    Log::info('Colleges fetched successfully from unified API', [
+                        'count' => count($colleges),
+                        'country' => $country,
+                        'city' => $city,
+                        'colleges' => $data['data']
+                    ]);
+                    
+                    return $colleges;
+                } else {
+                    Log::warning('Unexpected response format from unified API, returning test data', [
+                        'response' => $data,
+                        'country' => $country,
+                        'city' => $city
+                    ]);
+                    return $this->getTestColleges($country, $city);
+                }
             } else {
-                Log::warning('Failed to fetch colleges from external API, returning test data', [
+                Log::warning('Failed to fetch colleges from unified API, returning test data', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'country' => $country,
@@ -751,7 +818,7 @@ class ExternalApiService
                 return $this->getTestColleges($country, $city);
             }
         } catch (\Exception $e) {
-            Log::warning('Error fetching colleges from external API, returning test data', [
+            Log::warning('Error fetching colleges from unified API, returning test data', [
                 'error' => $e->getMessage(),
                 'country' => $country,
                 'city' => $city
@@ -761,42 +828,62 @@ class ExternalApiService
     }
 
     /**
-     * Get courses by country, city and college from external API
+     * Get courses by country, city and college from unified College Filter API
      */
     public function getCoursesByCountryCityCollege(string $country, string $city, string $college): array
     {
         try {
-            $apiUrl = config('services.external_api.courses_url');
+            $apiUrl = config('services.external_api.college_filter_url', 'https://tarundemo.innerxcrm.com/b2bapi/adform');
             
-            if (!$apiUrl) {
-                Log::warning('External API courses URL not configured, returning test data');
-                return $this->getTestCourses($country, $city, $college);
-            }
-
-            Log::info('Fetching courses from external API', [
+            Log::info('Fetching courses from unified College Filter API', [
                 'url' => $apiUrl, 
                 'country' => $country, 
                 'city' => $city, 
                 'college' => $college
             ]);
 
-            $response = Http::timeout(30)->get($apiUrl, [
-                'country' => $country,
-                'city' => $city,
-                'college' => $college
-            ]);
+            $response = Http::timeout(30)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post($apiUrl, [
+                    'country' => $country,
+                    'city' => $city,
+                    'college' => $college
+                ]);
 
             if ($response->successful()) {
                 $data = $response->json();
-                Log::info('Courses fetched successfully', [
-                    'count' => count($data), 
-                    'country' => $country, 
-                    'city' => $city, 
-                    'college' => $college
-                ]);
-                return $data;
+                
+                if (isset($data['status']) && $data['status'] === 'success' && 
+                    isset($data['level']) && $data['level'] === 'course' && 
+                    isset($data['data']) && isset($data['country']) && $data['country'] === $country &&
+                    isset($data['city']) && $data['city'] === $city &&
+                    isset($data['college']) && $data['college'] === $college) {
+                    
+                    // Transform the array of course names to the expected format
+                    $courses = array_map(function($course) {
+                        return ['course_name' => $course];
+                    }, $data['data']);
+                    
+                    Log::info('Courses fetched successfully from unified API', [
+                        'count' => count($courses),
+                        'country' => $country,
+                        'city' => $city,
+                        'college' => $college,
+                        'courses' => $data['data']
+                    ]);
+                    
+                    return $courses;
+                } else {
+                    Log::warning('Unexpected response format from unified API, returning test data', [
+                        'response' => $data,
+                        'country' => $country,
+                        'city' => $city,
+                        'college' => $college
+                    ]);
+                    return $this->getTestCourses($country, $city, $college);
+                }
             } else {
-                Log::warning('Failed to fetch courses from external API, returning test data', [
+                Log::warning('Failed to fetch courses from unified API, returning test data', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'country' => $country,
@@ -806,7 +893,7 @@ class ExternalApiService
                 return $this->getTestCourses($country, $city, $college);
             }
         } catch (\Exception $e) {
-            Log::warning('Error fetching courses from external API, returning test data', [
+            Log::warning('Error fetching courses from unified API, returning test data', [
                 'error' => $e->getMessage(),
                 'country' => $country,
                 'city' => $city,
@@ -817,12 +904,81 @@ class ExternalApiService
     }
 
     /**
+     * Unified College Filter API method
+     * This method provides direct access to the College Filter API for flexible usage
+     * 
+     * @param array $filters - Array of filters (country, city, college)
+     * @return array
+     */
+    public function getCollegeFilterData(array $filters = []): array
+    {
+        try {
+            $apiUrl = config('services.external_api.college_filter_url', 'https://tarundemo.innerxcrm.com/b2bapi/adform');
+            
+            Log::info('Calling unified College Filter API', [
+                'url' => $apiUrl,
+                'filters' => $filters
+            ]);
+
+            $response = Http::timeout(30)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post($apiUrl, $filters);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                if (isset($data['status']) && $data['status'] === 'success') {
+                    Log::info('College Filter API response received', [
+                        'level' => $data['level'] ?? 'unknown',
+                        'count' => $data['count'] ?? 0,
+                        'filters_applied' => $filters
+                    ]);
+                    
+                    return $data;
+                } else {
+                    Log::warning('Unexpected response from College Filter API', [
+                        'response' => $data,
+                        'filters' => $filters
+                    ]);
+                    
+                    return [
+                        'status' => 'error',
+                        'message' => 'Unexpected API response format'
+                    ];
+                }
+            } else {
+                Log::error('College Filter API request failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'filters' => $filters
+                ]);
+                
+                return [
+                    'status' => 'error',
+                    'message' => 'API request failed',
+                    'http_status' => $response->status()
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception during College Filter API call', [
+                'error' => $e->getMessage(),
+                'filters' => $filters
+            ]);
+            
+            return [
+                'status' => 'error',
+                'message' => 'API call exception: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Check if phone number exists in external CRM
      */
     public function checkPhoneNumber(string $phoneNumber): array
     {
         try {
-            $apiUrl = 'https://tarundemo.innerxcrm.com/b2bapi/CheckNumber.php';
+            $apiUrl = config('services.external_api.phone_check_url', 'https://tarundemo.innerxcrm.com/b2bapi/CheckNumber.php');
             
             Log::info('Checking phone number with external API', [
                 'phone_number' => $phoneNumber,

@@ -499,8 +499,8 @@ let allDocuments = @json($details['documents'] ?? []);
 function viewApiDocument(documentUrl) {
     // Handle relative URLs by checking if it starts with "uploads/"
     if (documentUrl.startsWith('uploads/')) {
-        // Construct full URL - you may need to adjust this based on your API's base URL
-        documentUrl = 'https://tarundemo.innerxcrm.com/' + documentUrl;
+        // Construct full URL using config base URL
+        documentUrl = '{{ config("services.external_api.base_url", "https://tarundemo.innerxcrm.com") }}/' + documentUrl;
     }
     window.open(documentUrl, '_blank');
 }
@@ -509,8 +509,8 @@ function viewApiDocument(documentUrl) {
 function downloadApiDocument(documentUrl, documentName) {
     // Handle relative URLs by checking if it starts with "uploads/"
     if (documentUrl.startsWith('uploads/')) {
-        // Construct full URL - you may need to adjust this based on your API's base URL
-        documentUrl = 'https://tarundemo.innerxcrm.com/' + documentUrl;
+        // Construct full URL using config base URL
+        documentUrl = '{{ config("services.external_api.base_url", "https://tarundemo.innerxcrm.com") }}/' + documentUrl;
     }
     
     const link = document.createElement('a');

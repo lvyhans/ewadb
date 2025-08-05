@@ -1,52 +1,136 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# B2B Application Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A comprehensive Laravel-based application management system for educational institutions and students.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 🎓 College Filter API Integration
+- **Real-time Data**: Integrated with unified College Filter API for live country, city, college, and course data
+- **Cascading Dropdowns**: Intelligent filtering - select country → cities → colleges → courses
+- **Fallback Protection**: Graceful degradation to test data if external API is unavailable
+- **Performance Optimized**: Efficient API calls only when needed
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 📋 Application Management
+- Lead creation and tracking
+- Application form with dynamic college/course selection
+- Document upload and management
+- Application status tracking
+- Multi-course application support
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 🔄 Task Management Integration
+- External task system integration
+- Webhook support for status updates
+- Task filtering and monitoring
+- Real-time status synchronization
 
-## Learning Laravel
+### 👥 User Management
+- Role-based access control
+- User approval workflow
+- Admin hierarchy management
+- Authentication with Sanctum
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## College Filter API
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+The application integrates with a unified College Filter API that provides:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```json
+POST https://tarundemo.innerxcrm.com/b2bapi/adform
+Content-Type: application/json
 
-## Laravel Sponsors
+// Get countries
+{}
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+// Get cities
+{"country": "Canada"}
 
-### Premium Partners
+// Get colleges  
+{"country": "Canada", "city": "Toronto"}
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+// Get courses
+{"country": "Canada", "city": "Toronto", "college": "Seneca College"}
+```
+
+### API Endpoints
+- `GET /api/dropdown/countries` - List all countries
+- `GET /api/dropdown/cities?country={country}` - Cities by country
+- `GET /api/dropdown/colleges?country={country}&city={city}` - Colleges by location
+- `GET /api/dropdown/courses?country={country}&city={city}&college={college}` - Courses by college
+- `POST /api/dropdown/college-filter` - Direct unified API access
+
+## Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   composer install
+   npm install
+   ```
+
+3. Configure environment:
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+4. Set up database:
+   ```bash
+   php artisan migrate
+   php artisan db:seed
+   ```
+
+5. Configure external APIs in `.env`:
+   ```bash
+   EXTERNAL_API_ENABLED=true
+   EXTERNAL_API_ENQUIRY_LEAD_URL=https://tarundemo.innerxcrm.com/b2bapi/enquirylead
+   EXTERNAL_API_CHECKLIST_URL=https://tarundemo.innerxcrm.com/b2bapi/checklist
+   EXTERNAL_API_COLLEGE_FILTER_URL=https://tarundemo.innerxcrm.com/b2bapi/adform
+   ```
+
+## Testing
+
+### Test College Filter API Integration
+```bash
+# Laravel command
+php artisan test:college-filter-api
+
+# Direct PHP test
+php test_college_filter_api.php
+
+# Frontend test
+http://localhost:8000/college-filter-test.html
+```
+
+### Run Application Tests
+```bash
+php artisan test
+```
+
+## API Documentation
+
+- **College Filter API**: See `COLLEGE_FILTER_API_INTEGRATION.md`
+- **Task Management**: See `TASK_MANAGEMENT_README.md`  
+- **Lead Access Control**: See `LEAD_ACCESS_CONTROL_IMPLEMENTATION.md`
+
+## Key Files
+
+### College Filter Integration
+- `app/Services/ExternalApiService.php` - API service layer
+- `app/Http/Controllers/ApplicationController.php` - API endpoints
+- `app/Console/Commands/TestCollegeFilterApi.php` - Test command
+- `resources/views/applications/create.blade.php` - Application form with cascading dropdowns
+
+### Configuration
+- `.env` - Environment configuration
+- `routes/api.php` - API routes
+- `config/services.php` - External service configuration
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Please follow Laravel coding standards and include tests for new features.
+
+## License
+
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 
 ## Code of Conduct
 
